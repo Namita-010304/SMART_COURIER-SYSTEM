@@ -1,0 +1,63 @@
+server:
+  port: 9090
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: "http://localhost:4200"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+      routes:
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/gateway/auth/**
+          filters:
+            - RewritePath=/gateway/auth(?<segment>.*), /auth${segment}
+
+        - id: delivery-service-main
+          uri: lb://delivery-service
+          predicates:
+            - Path=/gateway/deliveries/**
+          filters:
+            - RewritePath=/gateway/deliveries(?<segment>.*), /deliveries${segment}
+
+        - id: delivery-service-info
+          uri: lb://delivery-service
+          predicates:
+            - Path=/gateway/services/**
+          filters:
+            - RewritePath=/gateway/services(?<segment>.*), /services${segment}
+
+        - id: tracking-service
+          uri: lb://tracking-service
+          predicates:
+            - Path=/gateway/tracking/**
+          filters:
+            - RewritePath=/gateway/tracking(?<segment>.*), /tracking${segment}
+
+        - id: admin-service
+          uri: lb://admin-service
+          predicates:
+            - Path=/gateway/admin/**
+          filters:
+            - RewritePath=/gateway/admin(?<segment>.*), /admin${segment}
+
+jwt:
+  secret: SmartCourierSecretKeyForJWTTokenGenerationAndValidation2024SecureKey
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/

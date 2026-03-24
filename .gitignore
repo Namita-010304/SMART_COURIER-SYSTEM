@@ -1,0 +1,36 @@
+# Maven
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+logs/
+
+# Node/Angular
+node_modules/
+dist/
+.angular/
+.npm/
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Database
+auth_db_data/
+delivery_db_data/
+tracking_db_data/
+admin_db_data/

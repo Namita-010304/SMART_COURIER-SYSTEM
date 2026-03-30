@@ -63,13 +63,11 @@ public class AdminController {
         return ResponseEntity.noContent().build();
     }
 
-    // ========== Users ==========
     @GetMapping("/users") 
     public ResponseEntity<List<Object>> getAllUsers() {
         return ResponseEntity.ok(adminService.getAllUsers());
     }
 
-    // ========== Reports ==========
     @GetMapping("/reports")
     public ResponseEntity<List<Report>> getAllReports() {
         return ResponseEntity.ok(adminService.getAllReports());
@@ -79,7 +77,8 @@ public class AdminController {
     public ResponseEntity<Report> generateReport(
             @RequestParam String type,
             @RequestParam String title,
-            @RequestHeader(value = "X-User-Username", defaultValue = "admin") String username) {
+            @RequestHeader(value = "X-User-Username", defaultValue = "admin") String username)   // Use header for Auditing (I created this report).
+            {
         return ResponseEntity.ok(adminService.generateReport(type, title, username));
     }
 }

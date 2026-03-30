@@ -139,9 +139,8 @@ public class AdminService {
     }
 
     // ========== Users (via Auth Service) ==========
-    @SuppressWarnings("unchecked")
     public List<Object> getAllUsers() {
-        try {
+        try { 
             return authClient.getAllUsers();
         } catch (Exception e) {
             return Collections.emptyList();

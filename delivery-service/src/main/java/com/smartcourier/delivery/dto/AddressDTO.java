@@ -1,10 +1,12 @@
 package com.smartcourier.delivery.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class AddressDTO {
 
     @NotBlank(message = "Full name is required")

@@ -16,16 +16,17 @@ import java.util.Map;
 public class JwtUtil {
 
     @Value("${jwt.secret}")
-    private String secret;
+    private String secret; //injects secret key from application.yml
 
     @Value("${jwt.expiration}")
     private long expiration;
 
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8)); //sign and verify token 
     }
 
-    public String generateToken(String username, String role) {
+    public String generateToken(String username, String role)
+    {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", role);
         return Jwts.builder()

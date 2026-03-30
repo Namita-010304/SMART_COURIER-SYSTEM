@@ -5,8 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.*;
 
-@Getter 
-@Setter 
+@Data 
+@Builder 
 @NoArgsConstructor 
 @AllArgsConstructor
 public class PackageDTO {

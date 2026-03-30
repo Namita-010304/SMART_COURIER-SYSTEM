@@ -1,5 +1,6 @@
 package com.smartcourier.tracking.service;
 
+import com.smartcourier.tracking.dto.TrackingResponseDTO;
 import com.smartcourier.tracking.entity.*;
 import com.smartcourier.tracking.repository.*;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,16 +22,13 @@ public class TrackingService {
     @Value("${file.upload-dir}")
     private String uploadDir;
 
-    public TrackingService(TrackingEventRepository trackingEventRepository,
-                           DocumentRepository documentRepository,
-                           DeliveryProofRepository deliveryProofRepository) {
+    public TrackingService(TrackingEventRepository trackingEventRepository,DocumentRepository documentRepository,DeliveryProofRepository deliveryProofRepository) {
         this.trackingEventRepository = trackingEventRepository;
         this.documentRepository = documentRepository;
         this.deliveryProofRepository = deliveryProofRepository;
     }
 
-    public TrackingEvent addTrackingEvent(Long deliveryId, String trackingNumber,
-                                          String status, String location, String description) {
+    public TrackingEvent addTrackingEvent(Long deliveryId, String trackingNumber, String status, String location, String description) {
         TrackingEvent event = TrackingEvent.builder()
                 .deliveryId(deliveryId)
                 .trackingNumber(trackingNumber)
@@ -46,16 +44,19 @@ public class TrackingService {
         return trackingEventRepository.findByTrackingNumberOrderByTimestampDesc(trackingNumber);
     }
 
-    public Map<String, Object> getTrackingInfo(String trackingNumber) {
+    public TrackingResponseDTO getTrackingInfo(String trackingNumber) {
         List<TrackingEvent> events = getTrackingEvents(trackingNumber);
-        Map<String, Object> result = new HashMap<>();
-        result.put("trackingNumber", trackingNumber);
-        result.put("events", events);
+        
+        TrackingResponseDTO.TrackingResponseDTOBuilder builder = TrackingResponseDTO.builder()
+                .trackingNumber(trackingNumber)
+                .events(events);
+                
         if (!events.isEmpty()) {
-            result.put("currentStatus", events.get(0).getStatus());
-            result.put("lastUpdated", events.get(0).getTimestamp());
+            builder.currentStatus(events.get(0).getStatus())
+                   .lastUpdated(events.get(0).getTimestamp());
         }
-        return result;
+        
+        return builder.build();
     }
 
     public Document uploadDocument(Long deliveryId, MultipartFile file) throws IOException {

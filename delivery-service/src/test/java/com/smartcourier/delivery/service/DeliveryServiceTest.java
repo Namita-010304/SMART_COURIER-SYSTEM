@@ -1,5 +1,6 @@
 package com.smartcourier.delivery.service;
 
+import com.smartcourier.delivery.client.TrackingClient;
 import com.smartcourier.delivery.dto.*;
 import com.smartcourier.delivery.entity.*;
 import com.smartcourier.delivery.repository.DeliveryRepository;
@@ -24,6 +25,9 @@ class DeliveryServiceTest {
     @Mock
     private DeliveryRepository deliveryRepository;
 
+    @Mock
+    private TrackingClient trackingClient;
+
     @InjectMocks
     private DeliveryService deliveryService;
 
@@ -32,39 +36,56 @@ class DeliveryServiceTest {
 
     @BeforeEach
     void setUp() {
-        AddressDTO sender = new AddressDTO();
-        sender.setFullName("John Sender");
-        sender.setPhone("1111111111");
-        sender.setStreet("123 Main St");
-        sender.setCity("New York");
-        sender.setState("NY");
-        sender.setZipCode("10001");
-        sender.setCountry("USA");
+        AddressDTO sender = AddressDTO.builder()
+                .fullName("John Sender")
+                .phone("1111111111")
+                .street("123 Main St")
+                .city("New York")
+                .state("NY")
+                .zipCode("10001")
+                .country("USA")
+                .build();
 
-        AddressDTO receiver = new AddressDTO();
-        receiver.setFullName("Jane Receiver");
-        receiver.setPhone("2222222222");
-        receiver.setStreet("456 Oak Ave");
-        receiver.setCity("Los Angeles");
-        receiver.setState("CA");
-        receiver.setZipCode("90001");
-        receiver.setCountry("USA");
+        AddressDTO receiver = AddressDTO.builder()
+                .fullName("Jane Receiver")
+                .phone("2222222222")
+                .street("456 Oak Ave")
+                .city("Los Angeles")
+                .state("CA")
+                .zipCode("90001")
+                .country("USA")
+                .build();
 
-        PackageDTO pkg = new PackageDTO();
-        pkg.setWeight(2.5);
-        pkg.setDescription("Books");
-        pkg.setServiceType("DOMESTIC");
-        pkg.setFragile(false);
+        PackageDTO pkg = PackageDTO.builder()
+                .weight(2.5)
+                .description("Books")
+                .serviceType("DOMESTIC")
+                .fragile(false)
+                .build();
 
-        deliveryRequest = new DeliveryRequest();
-        deliveryRequest.setSenderAddress(sender);
-        deliveryRequest.setReceiverAddress(receiver);
-        deliveryRequest.setPackageDetails(pkg);
+        deliveryRequest = DeliveryRequest.builder()
+                .senderAddress(sender)
+                .receiverAddress(receiver)
+                .packageDetails(pkg)
+                .build();
+
+        Address senderEntity = Address.builder()
+                .fullName("John Sender").phone("1111111111").street("123 Main St").city("New York").state("NY").zipCode("10001").country("USA")
+                .build();
+        Address receiverEntity = Address.builder()
+                .fullName("Jane Receiver").phone("2222222222").street("456 Oak Ave").city("Los Angeles").state("CA").zipCode("90001").country("USA")
+                .build();
+        ParcelPackage packageEntity = ParcelPackage.builder()
+                .weight(2.5).description("Books").serviceType(ServiceType.DOMESTIC).fragile(false)
+                .build();
 
         testDelivery = Delivery.builder()
                 .id(1L)
                 .trackingNumber("SC123456789")
                 .username("testuser")
+                .senderAddress(senderEntity)
+                .receiverAddress(receiverEntity)
+                .parcelPackage(packageEntity)
                 .status(DeliveryStatus.BOOKED)
                 .charge(7.24)
                 .build();
@@ -72,13 +93,25 @@ class DeliveryServiceTest {
 
     @Test
     void createDelivery_Success() {
-        when(deliveryRepository.save(any(Delivery.class))).thenReturn(testDelivery);
+        // Create an ArgumentCaptor to "catch" the object that goes into the repository
+        org.mockito.ArgumentCaptor<Delivery> deliveryCaptor = org.mockito.ArgumentCaptor.forClass(Delivery.class);
+        
+        // We tell Mockito: When save is called, return whatever was passed in (so we can see the changes)
+        when(deliveryRepository.save(deliveryCaptor.capture())).thenReturn(testDelivery);
 
-        Delivery result = deliveryService.createDelivery(deliveryRequest, "testuser");
+        deliveryService.createDelivery(deliveryRequest, "testuser");
 
-        assertNotNull(result);
-        assertEquals("testuser", result.getUsername());
-        assertEquals(DeliveryStatus.BOOKED, result.getStatus());
+        // Now we inspect the object that the service tried to save
+        Delivery savedDelivery = deliveryCaptor.getValue();
+        
+        assertNotNull(savedDelivery);
+        assertEquals("testuser", savedDelivery.getUsername());
+        assertEquals(DeliveryStatus.BOOKED, savedDelivery.getStatus());
+        
+        // Verify the Business Logic (calculateCharge)
+        // Base for DOMESTIC is 5.99, weight is 2.5 * 0.5 = 1.25. Total = 7.24
+        assertEquals(7.24, savedDelivery.getCharge());
+        
         verify(deliveryRepository).save(any(Delivery.class));
     }
 
@@ -87,7 +120,7 @@ class DeliveryServiceTest {
         when(deliveryRepository.findByUsernameOrderByCreatedAtDesc("testuser"))
                 .thenReturn(Arrays.asList(testDelivery));
 
-        List<Delivery> results = deliveryService.getMyDeliveries("testuser");
+        List<DeliveryResponseDTO> results = deliveryService.getMyDeliveries("testuser");
 
         assertEquals(1, results.size());
         assertEquals("SC123456789", results.get(0).getTrackingNumber());
@@ -97,7 +130,7 @@ class DeliveryServiceTest {
     void getDeliveryById_Found() {
         when(deliveryRepository.findById(1L)).thenReturn(Optional.of(testDelivery));
 
-        Delivery result = deliveryService.getDeliveryById(1L);
+        DeliveryResponseDTO result = deliveryService.getDeliveryById(1L);
 
         assertNotNull(result);
         assertEquals(1L, result.getId());
@@ -115,7 +148,7 @@ class DeliveryServiceTest {
         when(deliveryRepository.findById(1L)).thenReturn(Optional.of(testDelivery));
         when(deliveryRepository.save(any(Delivery.class))).thenReturn(testDelivery);
 
-        Delivery result = deliveryService.updateStatus(1L, "IN_TRANSIT");
+        DeliveryResponseDTO result = deliveryService.updateStatus(1L, "IN_TRANSIT");
 
         assertNotNull(result);
         verify(deliveryRepository).save(any(Delivery.class));
@@ -123,10 +156,10 @@ class DeliveryServiceTest {
 
     @Test
     void getServiceInfo_ReturnsValidData() {
-        var info = deliveryService.getServiceInfo();
+        ServiceInfoDTO info = deliveryService.getServiceInfo();
 
         assertNotNull(info);
-        assertEquals("SmartCourier", info.get("company"));
-        assertNotNull(info.get("services"));
+        assertEquals("SmartCourier", info.getCompany());
+        assertNotNull(info.getServices());
     }
 }

@@ -1,5 +1,6 @@
 package com.smartcourier.tracking.controller;
 
+import com.smartcourier.tracking.dto.TrackingResponseDTO;
 import com.smartcourier.tracking.entity.*;
 import com.smartcourier.tracking.service.TrackingService;
 import org.springframework.http.ResponseEntity;
@@ -8,7 +9,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @CrossOrigin(origins = "http://localhost:4200")
@@ -21,11 +21,11 @@ public class TrackingController {
     }
 
     @GetMapping("/tracking/{trackingNumber}")
-    public ResponseEntity<Map<String, Object>> getTracking(@PathVariable("trackingNumber") String trackingNumber) {
+    public ResponseEntity<TrackingResponseDTO> getTracking(@PathVariable("trackingNumber") String trackingNumber) {
         return ResponseEntity.ok(trackingService.getTrackingInfo(trackingNumber));
     }
 
-    @PostMapping("/tracking/events")
+    @PostMapping("/tracking/events")             //builds tracking history 
     public ResponseEntity<TrackingEvent> addTrackingEvent(
             @RequestParam Long deliveryId,
             @RequestParam String trackingNumber,
@@ -41,7 +41,7 @@ public class TrackingController {
             @RequestParam("deliveryId") Long deliveryId,
             @RequestParam("file") MultipartFile file) throws IOException {
         return ResponseEntity.ok(trackingService.uploadDocument(deliveryId, file));
-    }
+    } 
 
     @GetMapping("/tracking/documents/{deliveryId}")
     public ResponseEntity<List<Document>> getDocuments(@PathVariable("deliveryId") Long deliveryId) {

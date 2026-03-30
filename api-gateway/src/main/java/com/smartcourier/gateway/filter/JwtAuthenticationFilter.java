@@ -35,12 +35,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getURI().getPath();
 
-        // Allow open endpoints without authentication
         if (isOpenEndpoint(path)) {
             return chain.filter(exchange);
         }
 
-        // Check for Authorization header
         if (!request.getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return exchange.getResponse().setComplete();
@@ -59,7 +57,6 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return exchange.getResponse().setComplete();
         }
 
-        // Add user info to headers for downstream services
         String username = jwtUtil.extractUsername(token);
         String role = jwtUtil.extractRole(token);
 

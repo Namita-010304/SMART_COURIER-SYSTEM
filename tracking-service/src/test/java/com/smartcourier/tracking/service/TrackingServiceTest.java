@@ -7,11 +7,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -50,7 +46,8 @@ class TrackingServiceTest {
 
         when(trackingEventRepository.save(any(TrackingEvent.class))).thenReturn(event);
 
-        TrackingEvent result = trackingService.addTrackingEvent(1L, "SC123", "IN_TRANSIT", "New York Hub", "Package arrived at hub");
+        TrackingEvent result = trackingService.addTrackingEvent(1L, "SC123", "IN_TRANSIT", "New York Hub",
+                "Package arrived at hub");
 
         assertNotNull(result);
         assertEquals("IN_TRANSIT", result.getStatus());
@@ -61,8 +58,7 @@ class TrackingServiceTest {
     void getTrackingEvents_ReturnsSortedEvents() {
         List<TrackingEvent> events = Arrays.asList(
                 TrackingEvent.builder().id(1L).trackingNumber("SC123").status("BOOKED").build(),
-                TrackingEvent.builder().id(2L).trackingNumber("SC123").status("IN_TRANSIT").build()
-        );
+                TrackingEvent.builder().id(2L).trackingNumber("SC123").status("IN_TRANSIT").build());
 
         when(trackingEventRepository.findByTrackingNumberOrderByTimestampDesc("SC123")).thenReturn(events);
 
@@ -75,23 +71,21 @@ class TrackingServiceTest {
     void getTrackingInfo_ReturnsTracking() {
         List<TrackingEvent> events = Arrays.asList(
                 TrackingEvent.builder().id(1L).trackingNumber("SC123").status("IN_TRANSIT")
-                        .timestamp(LocalDateTime.now()).build()
-        );
+                        .timestamp(LocalDateTime.now()).build());
 
         when(trackingEventRepository.findByTrackingNumberOrderByTimestampDesc("SC123")).thenReturn(events);
 
         var info = trackingService.getTrackingInfo("SC123");
 
         assertNotNull(info);
-        assertEquals("SC123", info.get("trackingNumber"));
-        assertEquals("IN_TRANSIT", info.get("currentStatus"));
+        assertEquals("SC123", info.getTrackingNumber());
+        assertEquals("IN_TRANSIT", info.getCurrentStatus());
     }
 
     @Test
     void getDocuments_ReturnsDocumentList() {
         List<Document> docs = Arrays.asList(
-                Document.builder().id(1L).deliveryId(1L).fileName("invoice.pdf").build()
-        );
+                Document.builder().id(1L).deliveryId(1L).fileName("invoice.pdf").build());
 
         when(documentRepository.findByDeliveryId(1L)).thenReturn(docs);
 

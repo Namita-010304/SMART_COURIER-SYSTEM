@@ -4,9 +4,9 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
-@Getter 
-@Setter 
-@NoArgsConstructor 
+@Data
+@Builder
+@NoArgsConstructor
 @AllArgsConstructor
 public class DeliveryRequest {
 
@@ -15,7 +15,7 @@ public class DeliveryRequest {
     private AddressDTO senderAddress;
 
     @NotNull(message = "Receiver address is required")
-    @Valid 
+    @Valid
     private AddressDTO receiverAddress;
 
     @NotNull(message = "Package details are required")

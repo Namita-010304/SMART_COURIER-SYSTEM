@@ -2,47 +2,41 @@ package com.smartcourier.admin.service;
 
 import com.smartcourier.admin.entity.Hub;
 import com.smartcourier.admin.entity.Report;
-import com.smartcourier.admin.repository.HubRepository;
-import com.smartcourier.admin.repository.ReportRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
 class AdminServiceTest {
 
-    @Mock
-    private HubRepository hubRepository;
+    private com.smartcourier.admin.repository.HubRepository hubRepository;
+    private com.smartcourier.admin.repository.ReportRepository reportRepository;
+    private com.smartcourier.admin.client.DeliveryClient deliveryClient;
+    private com.smartcourier.admin.client.TrackingClient trackingClient;
+    private com.smartcourier.admin.client.AuthClient authClient;
 
-    @Mock
-    private ReportRepository reportRepository;
-
-    @Mock
-    private RestTemplate restTemplate;
-
-    @InjectMocks
     private AdminService adminService;
 
     private Hub testHub;
 
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(adminService, "deliveryServiceUrl", "http://localhost:8082");
-        ReflectionTestUtils.setField(adminService, "authServiceUrl", "http://localhost:8081");
+        hubRepository = mock(com.smartcourier.admin.repository.HubRepository.class);
+        reportRepository = mock(com.smartcourier.admin.repository.ReportRepository.class);
+        deliveryClient = mock(com.smartcourier.admin.client.DeliveryClient.class);
+        trackingClient = mock(com.smartcourier.admin.client.TrackingClient.class);
+        authClient = mock(com.smartcourier.admin.client.AuthClient.class);
 
+        adminService = new AdminService(hubRepository, reportRepository, deliveryClient, trackingClient, authClient);
+        
         testHub = Hub.builder()
                 .id(1L)
                 .name("NYC Central Hub")
@@ -59,12 +53,12 @@ class AdminServiceTest {
         when(hubRepository.count()).thenReturn(5L);
         when(hubRepository.findByActive(true)).thenReturn(Arrays.asList(testHub));
         when(reportRepository.count()).thenReturn(3L);
-        when(restTemplate.getForObject(anyString(), eq(Object[].class))).thenReturn(new Object[10]);
+        when(deliveryClient.getAllDeliveries()).thenReturn(Arrays.asList(new Object(), new Object()));
 
         var dashboard = adminService.getDashboardData();
 
         assertNotNull(dashboard);
-        assertEquals(10, dashboard.get("totalDeliveries"));
+        assertEquals(2, dashboard.get("totalDeliveries"));
         assertEquals(5L, dashboard.get("totalHubs"));
     }
 
@@ -139,5 +133,20 @@ class AdminServiceTest {
 
         assertNotNull(reports);
         verify(reportRepository).findAllByOrderByGeneratedAtDesc();
+    }
+
+    @Test
+    void resolveDeliveryException_Success() {
+        Map<String, Object> delivery = new HashMap<>();
+        delivery.put("trackingNumber", "SC123456");
+
+        when(deliveryClient.getDeliveryById(1L)).thenReturn(delivery);
+        when(deliveryClient.updateStatus(1L, "RESOLVED")).thenReturn(delivery);
+
+        Object result = adminService.resolveDeliveryException(1L, "RESOLVED");
+
+        assertNotNull(result);
+        verify(deliveryClient).updateStatus(1L, "RESOLVED");
+        verify(trackingClient).addTrackingEvent(eq(1L), eq("SC123456"), anyString(), anyString(), anyString());
     }
 }

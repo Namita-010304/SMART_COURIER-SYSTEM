@@ -28,7 +28,7 @@ public class AuthController {
     }
 
     @GetMapping("/users")
-    public ResponseEntity<java.util.List<com.smartcourier.auth.entity.User>> getAllUsers() {
+    public ResponseEntity<java.util.List<UserResponseDTO>> getAllUsers() {
         return ResponseEntity.ok(authService.getAllUsers());
     }
 }

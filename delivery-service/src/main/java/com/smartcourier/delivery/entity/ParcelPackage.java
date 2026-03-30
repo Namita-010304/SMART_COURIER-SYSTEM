@@ -5,7 +5,11 @@ import lombok.*;
 
 @Entity
 @Table(name = "packages")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ParcelPackage {
 
     @Id

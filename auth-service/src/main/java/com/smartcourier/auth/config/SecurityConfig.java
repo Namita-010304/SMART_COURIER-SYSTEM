@@ -41,7 +41,8 @@ public class SecurityConfig {
                 "/api-docs/**",
                 "/v3/api-docs/**",
                 "/swagger-ui/**",
-                "/swagger-ui.html"
+                 "/swagger-ui.html",
+                 "/actuator/**"
             ).permitAll()                   //helps sign in w/o a token
             .anyRequest().authenticated()  //rest all need a valid user
         )

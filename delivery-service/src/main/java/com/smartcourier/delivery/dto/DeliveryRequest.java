@@ -24,4 +24,5 @@ public class DeliveryRequest {
 
     private String scheduledPickup;
     private String specialInstructions;
+    private String status;
 }

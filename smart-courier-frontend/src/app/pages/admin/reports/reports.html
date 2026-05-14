@@ -1,0 +1,89 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h2>Logistics Reports</h2>
+      <p class="text-muted">Generate and analyze system-wide performance reports.</p>
+    </div>
+    <button class="btn btn-primary" (click)="showReportModal = true">
+      <i class="bi bi-file-earmark-bar-graph"></i> Generate New Report
+    </button>
+  </div>
+
+  <div class="reports-grid grid mt-4">
+    <div class="history-section">
+      <div class="glass-card">
+        <h3>Past Reports</h3>
+        <div class="report-list mt-3">
+          <div *ngFor="let report of pastReports" class="report-item">
+            <div class="report-icon"><i class="bi bi-file-earmark-pdf"></i></div>
+            <div class="report-info">
+              <p class="font-bold">{{ report.title }}</p>
+              <p class="small-text text-muted">{{ report.type }} • {{ report.generatedAt | date:'mediumDate' }}</p>
+            </div>
+            <button class="icon-btn" (click)="downloadReport(report)"><i class="bi bi-download"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="result-section">
+      <div class="glass-card" *ngIf="generatedReport">
+        <div class="flex-between mb-4">
+          <h3>{{ generatedReport.title }}</h3>
+          <button class="btn btn-outline btn-sm" (click)="generatedReport = null">Clear</button>
+        </div>
+        <div class="kpi-grid">
+          <div *ngFor="let item of generatedReport.dataItems" class="kpi-item">
+            <p class="small-text uppercase text-muted">{{ item.label }}</p>
+            <p class="h3 font-bold">{{ item.value }}</p>
+          </div>
+        </div>
+        <div class="chart-placeholder mt-4">
+          <div class="placeholder-content">
+            <i class="bi bi-bar-chart-line"></i>
+            <p>Mock Visualization Data</p>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-full mt-4" (click)="downloadReport()">Export to CSV</button>
+      </div>
+      
+      <div class="glass-card empty-state" *ngIf="!generatedReport && !isGenerating">
+        <i class="bi bi-graph-up"></i>
+        <p>Generate a report to see analysis results here.</p>
+      </div>
+
+      <div class="glass-card loading-state" *ngIf="isGenerating">
+        <app-loading-spinner></app-loading-spinner>
+        <p class="mt-3">Processing data and generating report...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generate Report Modal -->
+  <div class="modal-overlay" *ngIf="showReportModal">
+    <div class="glass-card modal-card">
+      <div class="modal-header">
+        <h3>New Report Request</h3>
+        <button class="icon-btn" (click)="showReportModal = false"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <form [formGroup]="reportForm" (ngSubmit)="generateReport()" class="modal-form">
+        <div class="form-group">
+          <label>REPORT TITLE</label>
+          <input type="text" formControlName="title" class="form-input" placeholder="e.g., Monthly Performance - Oct">
+        </div>
+        <div class="form-group">
+          <label>REPORT TYPE</label>
+          <select formControlName="type" class="form-input">
+            <option value="DELIVERY_SUMMARY">Delivery Summary</option>
+            <option value="PERFORMANCE">Performance Analysis</option>
+            <option value="HUB_UTILIZATION">Hub Utilization</option>
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" (click)="showReportModal = false">Cancel</button>
+          <button type="submit" class="btn btn-primary" [disabled]="reportForm.invalid">Generate</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

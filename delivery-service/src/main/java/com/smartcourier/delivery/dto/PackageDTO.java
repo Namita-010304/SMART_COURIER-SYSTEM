@@ -23,7 +23,7 @@ public class PackageDTO {
     private String description;
 
     @NotBlank(message = "Service type is required")
-    private String serviceType;
+    private String serviceType; //domestic express international
 
     private Double declaredValue;
     private Boolean fragile;

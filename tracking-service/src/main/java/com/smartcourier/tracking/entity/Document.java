@@ -6,10 +6,10 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "documents")
-@Getter 
-@Setter 
-@NoArgsConstructor 
-@AllArgsConstructor 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class Document {
 

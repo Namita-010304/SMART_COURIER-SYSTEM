@@ -1,0 +1,112 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h2>User Management</h2>
+      <p class="text-muted">Manage system access levels and security protocols.</p>
+    </div>
+    <button class="btn btn-primary" (click)="showAddModal = true">
+      <i class="bi bi-person-plus"></i> Add User
+    </button>
+  </div>
+
+  <div class="glass-card table-card mt-4">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of users">
+            <td class="font-bold">#{{user.id}}</td>
+            <td>{{user.username}}</td>
+            <td class="text-muted">{{user.email || 'N/A'}}</td>
+            <td><span class="badge" [ngClass]="user.role === 'ADMIN' ? 'badge-primary' : 'badge-neutral'">{{user.role}}</span></td>
+            <td class="actions-cell">
+              <button class="icon-btn" (click)="openEditModal(user)" title="Edit"><i class="bi bi-pencil-square"></i></button>
+              <button class="icon-btn text-danger" (click)="confirmDelete(user)" title="Delete"><i class="bi bi-trash"></i></button>
+            </td>
+          </tr>
+          <tr *ngIf="users.length === 0">
+            <td colspan="5" class="text-muted text-center">No users found</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Add User Modal -->
+  <div class="modal-overlay" *ngIf="showAddModal">
+    <div class="glass-card modal-card">
+      <div class="modal-header">
+        <h3>Add New User</h3>
+        <button class="icon-btn" (click)="showAddModal = false"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <form [formGroup]="userForm" (ngSubmit)="addUser()" class="modal-form">
+        <div class="form-group">
+          <label>USERNAME</label>
+          <input type="text" formControlName="username" class="form-input" placeholder="Min 4 chars">
+        </div>
+        <div class="form-group">
+          <label>EMAIL</label>
+          <input type="email" formControlName="email" class="form-input" placeholder="email@company.com">
+        </div>
+        <div class="form-group">
+          <label>PASSWORD</label>
+          <input type="password" formControlName="password" class="form-input" placeholder="Min 6 chars">
+        </div>
+        <div class="form-group">
+          <label>ROLE</label>
+          <select formControlName="role" class="form-input">
+            <option value="CUSTOMER">Customer</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" (click)="showAddModal = false">Cancel</button>
+          <button type="submit" class="btn btn-primary" [disabled]="userForm.invalid">Save User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit User Modal -->
+  <div class="modal-overlay" *ngIf="showEditModal">
+    <div class="glass-card modal-card">
+      <div class="modal-header">
+        <h3>Edit User</h3>
+        <button class="icon-btn" (click)="showEditModal = false"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <form [formGroup]="editForm" (ngSubmit)="saveEdit()" class="modal-form">
+        <div class="form-group">
+          <label>EMAIL</label>
+          <input type="email" formControlName="email" class="form-input">
+        </div>
+        <div class="form-group">
+          <label>ROLE</label>
+          <select formControlName="role" class="form-input">
+            <option value="CUSTOMER">Customer</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" (click)="showEditModal = false">Cancel</button>
+          <button type="submit" class="btn btn-primary" [disabled]="editForm.invalid">Update</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <app-confirmation-modal
+    [show]="showDeleteModal"
+    title="Delete User"
+    [message]="'Are you sure you want to delete user ' + userToDelete?.username + '?'"
+    (onConfirm)="deleteUser()"
+    (onCancel)="showDeleteModal = false">
+  </app-confirmation-modal>
+</div>

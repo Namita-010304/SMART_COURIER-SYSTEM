@@ -1,0 +1,49 @@
+<div class="container section pt-4">
+  <div class="page-header">
+    <div class="flex-align gap-2">
+      <a routerLink="/customer/deliveries" class="icon-btn"><i class="bi bi-arrow-left"></i></a>
+      <div>
+        <h2>Upload Documents</h2>
+        <p class="text-muted">Delivery ID: <span class="font-bold text-primary">{{deliveryId}}</span></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="documents-grid grid">
+    <div class="upload-section">
+      <div class="glass-card">
+        <div class="card-header">
+          <h3>New Upload</h3>
+          <p class="small-text text-muted">Supported types: PDF, JPG, PNG (Max 5MB)</p>
+        </div>
+        <app-file-upload (filesUploaded)="handleFiles($event)"></app-file-upload>
+        <div *ngIf="uploading" class="text-center mt-3">
+          <p class="text-muted small-text">Uploading...</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="history-section">
+      <div class="glass-card">
+        <div class="card-header">
+          <h3>Uploaded Documents</h3>
+        </div>
+        <div *ngIf="loadingDocs" class="text-center p-4">
+          <p class="text-muted small-text">Loading documents...</p>
+        </div>
+        <div class="doc-list mt-3" *ngIf="!loadingDocs">
+          <div *ngFor="let doc of uploadedDocs" class="doc-item">
+            <div class="doc-icon"><i class="bi" [ngClass]="doc.type === 'PDF' ? 'bi-file-earmark-pdf' : 'bi-file-earmark-image'"></i></div>
+            <div class="doc-info">
+              <p class="font-bold">{{ doc.name }}</p>
+              <p class="small-text text-muted">{{ doc.type }} • {{ doc.date }}</p>
+            </div>
+          </div>
+          <div *ngIf="uploadedDocs.length === 0" class="text-center p-4">
+            <p class="text-muted">No documents uploaded yet.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

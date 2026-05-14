@@ -1,0 +1,210 @@
+<div class="wizard-container container section pt-4">
+  <div class="stepper-wrapper">
+    <div class="stepper">
+      <div class="step" [ngClass]="{'completed': currentStep > 1, 'active': currentStep === 1}">
+        <div class="step-circle"><i *ngIf="currentStep > 1" class="bi bi-check"></i><span *ngIf="currentStep <= 1">1</span></div>
+        <div class="step-label">Sender</div>
+      </div>
+      <div class="step-line" [ngClass]="{'active': currentStep > 1}"></div>
+      
+      <div class="step" [ngClass]="{'completed': currentStep > 2, 'active': currentStep === 2}">
+        <div class="step-circle"><i *ngIf="currentStep > 2" class="bi bi-check"></i><span *ngIf="currentStep <= 2">2</span></div>
+        <div class="step-label">Receiver</div>
+      </div>
+      <div class="step-line" [ngClass]="{'active': currentStep > 2}"></div>
+      
+      <div class="step" [ngClass]="{'completed': currentStep > 3, 'active': currentStep === 3}">
+        <div class="step-circle"><i *ngIf="currentStep > 3" class="bi bi-check"></i><span *ngIf="currentStep <= 3">3</span></div>
+        <div class="step-label">Package</div>
+      </div>
+      <div class="step-line" [ngClass]="{'active': currentStep > 3}"></div>
+      
+      <div class="step" [ngClass]="{'completed': currentStep > 4, 'active': currentStep === 4}">
+        <div class="step-circle"><i *ngIf="currentStep > 4" class="bi bi-check"></i><span *ngIf="currentStep <= 4">4</span></div>
+        <div class="step-label">Review</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wizard-content" [formGroup]="wizardForm">
+    <div class="glass-card wizard-card">
+      
+      <!-- Step 1: Sender Details -->
+      <div class="step-content" *ngIf="currentStep === 1" formGroupName="sender">
+        <div class="form-header">
+          <h3>Sender Details</h3>
+          <p class="text-muted">Where should we pick up the parcel?</p>
+        </div>
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label>FULL NAME</label>
+            <input type="text" class="form-input" formControlName="name" placeholder="John Doe">
+          </div>
+          <div class="form-group flex-1">
+            <label>PHONE NUMBER</label>
+            <input type="text" class="form-input" formControlName="phone" placeholder="10-digit mobile">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>EMAIL ADDRESS</label>
+          <input type="email" class="form-input" formControlName="email" placeholder="john@example.com">
+        </div>
+        <div class="form-group">
+          <label>PICKUP ADDRESS</label>
+          <input type="text" class="form-input" formControlName="address" placeholder="Street, Apartment, Suite">
+        </div>
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label>CITY</label>
+            <input type="text" class="form-input" formControlName="city" placeholder="e.g., London">
+          </div>
+          <div class="form-group flex-1">
+            <label>PINCODE</label>
+            <input type="text" class="form-input" formControlName="pincode" placeholder="6-digit code">
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Receiver Details -->
+      <div class="step-content" *ngIf="currentStep === 2" formGroupName="receiver">
+        <div class="form-header">
+          <h3>Receiver Details</h3>
+          <p class="text-muted">Where should we deliver the parcel?</p>
+        </div>
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label>FULL NAME</label>
+            <input type="text" class="form-input" formControlName="name" placeholder="Jane Smith">
+          </div>
+          <div class="form-group flex-1">
+            <label>PHONE NUMBER</label>
+            <input type="text" class="form-input" formControlName="phone" placeholder="10-digit mobile">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>EMAIL ADDRESS</label>
+          <input type="email" class="form-input" formControlName="email" placeholder="jane@example.com">
+        </div>
+        <div class="form-group">
+          <label>DELIVERY ADDRESS</label>
+          <input type="text" class="form-input" formControlName="address" placeholder="Street, Apartment, Suite">
+        </div>
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label>CITY</label>
+            <input type="text" class="form-input" formControlName="city" placeholder="e.g., Manchester">
+          </div>
+          <div class="form-group flex-1">
+            <label>PINCODE</label>
+            <input type="text" class="form-input" formControlName="pincode" placeholder="6-digit code">
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Package Info -->
+      <div class="step-content" *ngIf="currentStep === 3" formGroupName="package">
+        <div class="form-header">
+          <h3>Package Information</h3>
+          <p class="text-muted">Tell us about what you're shipping</p>
+        </div>
+        <div class="form-row">
+          <div class="form-group flex-2">
+            <label>PACKAGE TYPE</label>
+            <select class="form-input" formControlName="type">
+              <option value="Document">Document</option>
+              <option value="Fragile">Fragile</option>
+              <option value="Electronics">Electronics</option>
+              <option value="Clothing">Clothing</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group flex-1">
+            <label>WEIGHT (KG)</label>
+            <input type="number" class="form-input" formControlName="weight" step="0.1">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>DIMENSIONS (L X W X H IN CM)</label>
+          <div class="dimensions-row">
+            <input type="number" class="form-input" formControlName="length" placeholder="Length">
+            <input type="number" class="form-input" formControlName="width" placeholder="Width">
+            <input type="number" class="form-input" formControlName="height" placeholder="Height">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>SERVICE TYPE</label>
+          <div class="service-types">
+            <label class="service-card" [ngClass]="{'selected': wizardForm.get('package.serviceType')?.value === 'DOMESTIC'}">
+              <input type="radio" value="DOMESTIC" formControlName="serviceType" class="hidden-radio">
+              <div class="service-icon"><i class="bi bi-truck"></i></div>
+              <div class="service-info">
+                <h4>Domestic</h4>
+                <p>Standard delivery</p>
+              </div>
+            </label>
+            <label class="service-card featured" [ngClass]="{'selected': wizardForm.get('package.serviceType')?.value === 'EXPRESS'}">
+              <input type="radio" value="EXPRESS" formControlName="serviceType" class="hidden-radio">
+              <div class="service-icon"><i class="bi bi-lightning-charge"></i></div>
+              <div class="service-info">
+                <h4>Express</h4>
+                <p>Next day priority</p>
+              </div>
+            </label>
+            <label class="service-card" [ngClass]="{'selected': wizardForm.get('package.serviceType')?.value === 'INTERNATIONAL'}">
+              <input type="radio" value="INTERNATIONAL" formControlName="serviceType" class="hidden-radio">
+              <div class="service-icon"><i class="bi bi-globe"></i></div>
+              <div class="service-info">
+                <h4>International</h4>
+                <p>Global shipping</p>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Review & Confirm -->
+      <div class="step-content" *ngIf="currentStep === 4">
+        <div class="form-header">
+          <h3>Review & Confirm</h3>
+          <p class="text-muted">Please verify the details before booking</p>
+        </div>
+        
+        <div class="review-grid grid">
+          <div class="review-section">
+            <h4 class="uppercase small-text text-muted mb-2">Sender</h4>
+            <p class="font-bold">{{ wizardForm.value.sender.name }}</p>
+            <p class="small-text">{{ wizardForm.value.sender.address }}, {{ wizardForm.value.sender.city }}</p>
+          </div>
+          <div class="review-section">
+            <h4 class="uppercase small-text text-muted mb-2">Receiver</h4>
+            <p class="font-bold">{{ wizardForm.value.receiver.name }}</p>
+            <p class="small-text">{{ wizardForm.value.receiver.address }}, {{ wizardForm.value.receiver.city }}</p>
+          </div>
+          <div class="review-section">
+            <h4 class="uppercase small-text text-muted mb-2">Package</h4>
+            <p>{{ wizardForm.value.package.type }} ({{ wizardForm.value.package.weight }}kg)</p>
+            <p class="small-text">{{ wizardForm.value.package.serviceType }} Service</p>
+          </div>
+          <div class="review-section highlight-box">
+            <h4 class="uppercase small-text text-muted mb-2">Estimated Cost</h4>
+            <h2 class="text-primary">${{ estimatedCost }}</h2>
+          </div>
+        </div>
+      </div>
+
+      <div class="wizard-footer">
+        <button class="btn btn-outline" (click)="prevStep()" *ngIf="currentStep > 1">
+          <i class="bi bi-arrow-left"></i> Back
+        </button>
+        <div class="ms-auto">
+          <button class="btn btn-primary" (click)="nextStep()" *ngIf="currentStep < 4">
+            Next Step <i class="bi bi-arrow-right"></i>
+          </button>
+          <button class="btn btn-primary" (click)="confirmBooking()" *ngIf="currentStep === 4">
+            Confirm & Book <i class="bi bi-check-circle"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

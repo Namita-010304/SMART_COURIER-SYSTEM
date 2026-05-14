@@ -1,0 +1,161 @@
+<div class="container section pt-4">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h2>My Deliveries</h2>
+      <p class="text-muted">Manage and track all your shipments</p>
+    </div>
+    <a routerLink="/wizard" class="btn btn-primary">
+      <i class="bi bi-plus-lg"></i> New Delivery
+    </a>
+  </div>
+
+  <!-- Status Filter Tabs -->
+  <div class="filter-tabs mb-4">
+    <button class="filter-tab" [class.active]="selectedStatus === 'All'" (click)="selectedStatus = 'All'">
+      All <span class="badge-count">{{statusCounts.all}}</span>
+    </button>
+    <button class="filter-tab" [class.active]="selectedStatus === 'ACTIVE'" (click)="selectedStatus = 'ACTIVE'">
+      Active <span class="badge-count">{{statusCounts.active}}</span>
+    </button>
+    <button class="filter-tab" [class.active]="selectedStatus === 'DELIVERED'" (click)="selectedStatus = 'DELIVERED'">
+      Delivered <span class="badge-count">{{statusCounts.delivered}}</span>
+    </button>
+    <button class="filter-tab" [class.active]="selectedStatus === 'FAILED'" (click)="selectedStatus = 'FAILED'">
+      Issues <span class="badge-count">{{statusCounts.issues}}</span>
+    </button>
+  </div>
+
+  <!-- Search & View Toggle -->
+  <div class="controls-bar mb-4">
+    <div class="search-bar">
+      <i class="bi bi-search"></i>
+      <input type="text" [(ngModel)]="searchQuery" placeholder="Search by tracking no., receiver, or city...">
+    </div>
+    <div class="toggle-group">
+      <button class="toggle-btn" [class.active]="viewMode === 'table'" (click)="viewMode = 'table'">
+        <i class="bi bi-list"></i>
+      </button>
+      <button class="toggle-btn" [class.active]="viewMode === 'grid'" (click)="viewMode = 'grid'">
+        <i class="bi bi-grid"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="text-center p-5">
+    <i class="bi bi-arrow-repeat spin-icon" style="font-size:3rem;color:var(--primary)"></i>
+    <p class="text-muted mt-3">Loading deliveries...</p>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading && filteredDeliveries.length === 0" class="empty-state glass-card">
+    <i class="bi bi-inbox"></i>
+    <h3>No deliveries found</h3>
+    <p class="text-muted">{{searchQuery ? 'Try adjusting your search' : 'Create your first delivery to get started'}}</p>
+    <a routerLink="/wizard" class="btn btn-primary mt-3" *ngIf="!searchQuery">
+      <i class="bi bi-plus-lg"></i> Create Delivery
+    </a>
+  </div>
+
+  <!-- Table View -->
+  <div class="glass-card" *ngIf="!loading && filteredDeliveries.length > 0 && viewMode === 'table'">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Tracking Number</th>
+            <th>Receiver</th>
+            <th>Destination</th>
+            <th>Service</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let d of filteredDeliveries">
+            <td>
+              <div class="tracking-cell">
+                <span class="font-bold text-primary">{{d.trackingNumber}}</span>
+                <button class="copy-btn" (click)="copyTracking(d.trackingNumber)" title="Copy tracking number">
+                  <i class="bi bi-clipboard"></i>
+                </button>
+              </div>
+            </td>
+            <td>{{d.receiverAddress?.fullName || 'N/A'}}</td>
+            <td class="text-muted">{{d.receiverAddress?.city || 'N/A'}}</td>
+            <td>
+              <span class="service-badge">{{d.packageDetails?.serviceType || 'N/A'}}</span>
+            </td>
+            <td><app-status-badge [status]="d.status"></app-status-badge></td>
+            <td class="text-muted">{{d.createdAt | date:'mediumDate'}}</td>
+            <td class="actions-cell">
+              <button class="icon-btn" (click)="trackDelivery(d.trackingNumber)" title="Track">
+                <i class="bi bi-geo-alt-fill"></i>
+              </button>
+              <a [routerLink]="['/customer/deliveries', d.id]" class="icon-btn" title="Details">
+                <i class="bi bi-eye"></i>
+              </a>
+              <a [routerLink]="['/customer/documents', d.id]" class="icon-btn" title="Upload Documents">
+                <i class="bi bi-file-earmark-arrow-up"></i>
+              </a>
+              <a *ngIf="d.status === 'DELIVERED'" [routerLink]="['/customer/confirmation', d.id]" class="icon-btn" title="View Proof of Delivery">
+                <i class="bi bi-patch-check-fill text-success"></i>
+              </a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Grid View -->
+  <div class="grid grid-3" *ngIf="!loading && filteredDeliveries.length > 0 && viewMode === 'grid'">
+    <div class="glass-card delivery-card" *ngFor="let d of filteredDeliveries">
+      <div class="card-header">
+        <div class="tracking-cell">
+          <span class="font-bold text-primary">{{d.trackingNumber}}</span>
+          <button class="copy-btn" (click)="copyTracking(d.trackingNumber)">
+            <i class="bi bi-clipboard"></i>
+          </button>
+        </div>
+        <app-status-badge [status]="d.status"></app-status-badge>
+      </div>
+      <div class="card-body">
+        <div class="info-row">
+          <span class="text-muted">Receiver:</span>
+          <span class="font-bold">{{d.receiverAddress?.fullName || 'N/A'}}</span>
+        </div>
+        <div class="info-row">
+          <span class="text-muted">Destination:</span>
+          <span>{{d.receiverAddress?.city || 'N/A'}}</span>
+        </div>
+        <div class="info-row">
+          <span class="text-muted">Service:</span>
+          <span class="service-badge">{{d.packageDetails?.serviceType || 'N/A'}}</span>
+        </div>
+        <div class="info-row">
+          <span class="text-muted">Date:</span>
+          <span>{{d.createdAt | date:'mediumDate'}}</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <button class="btn btn-primary btn-sm" (click)="trackDelivery(d.trackingNumber)">
+          <i class="bi bi-geo-alt-fill"></i> Track
+        </button>
+        <a [routerLink]="['/customer/deliveries', d.id]" class="btn btn-outline btn-sm">
+          <i class="bi bi-eye"></i> Details
+        </a>
+        <a [routerLink]="['/customer/documents', d.id]" class="btn btn-outline btn-sm">
+          <i class="bi bi-file-earmark-arrow-up"></i> Docs
+        </a>
+        <a *ngIf="d.status === 'DELIVERED'" [routerLink]="['/customer/confirmation', d.id]" class="btn btn-outline btn-sm text-success">
+          <i class="bi bi-patch-check-fill"></i> Proof
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div>

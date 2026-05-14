@@ -1,0 +1,113 @@
+<div class="profile-page">
+
+  <!-- Hero Banner -->
+  <div class="profile-hero">
+    <div class="container">
+      <div class="hero-content">
+        <div class="avatar-hero">{{ user?.username?.charAt(0)?.toUpperCase() }}</div>
+        <div class="hero-text">
+          <h1>{{ user?.username }}</h1>
+          <span class="hero-badge">{{ user?.role }}</span>
+        </div>
+        <div class="hero-actions">
+          <button class="btn btn-outline-white" (click)="toggleEdit()">
+            {{ editMode ? 'Cancel' : 'Edit Profile' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cards pulled up over hero -->
+  <div class="profile-content">
+    <div class="container">
+      <div class="profile-grid">
+
+        <!-- Profile Info Card -->
+        <div class="info-card">
+          <div class="info-card-header">
+            <h3>Account Information</h3>
+          </div>
+
+          <div class="info-card-body">
+            <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+              <div class="field-row">
+                <div class="field-group">
+                  <label>Username</label>
+                  <div class="field-value">{{ user?.username }}</div>
+                </div>
+                <div class="field-group">
+                  <label>Email Address</label>
+                  <input *ngIf="editMode" type="email" formControlName="email" class="form-input">
+                  <div *ngIf="!editMode" class="field-value">{{ user?.email }}</div>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field-group">
+                  <label>Role</label>
+                  <div class="field-value">{{ user?.role }}</div>
+                </div>
+                <div class="field-group">
+                  <label>Account Status</label>
+                  <div class="field-value">Active</div>
+                </div>
+              </div>
+              <div class="form-footer" *ngIf="editMode">
+                <button type="submit" class="btn btn-primary" [disabled]="profileForm.invalid || saving">
+                  {{ saving ? 'Saving...' : 'Save Changes' }}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Stats strip -->
+          <div class="stats-strip">
+            <div class="stat-item">
+              <div class="stat-value">{{ user?.role }}</div>
+              <div class="stat-label">Access Level</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">Active</div>
+              <div class="stat-label">Status</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">SmartCourier</div>
+              <div class="stat-label">Platform</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Password Card -->
+        <div class="password-card">
+          <div class="password-card-header">
+            <h3>Change Password</h3>
+          </div>
+          <div class="password-card-body">
+            <form [formGroup]="passwordForm" (ngSubmit)="updatePassword()" class="security-form">
+              <div class="form-group">
+                <label>Current Password</label>
+                <input type="password" formControlName="currentPassword" class="form-input" placeholder="••••••••">
+              </div>
+              <div class="form-group">
+                <label>New Password</label>
+                <input type="password" formControlName="newPassword" class="form-input" placeholder="••••••••">
+              </div>
+              <div class="form-group">
+                <label>Confirm New Password</label>
+                <input type="password" formControlName="confirmPassword" class="form-input" placeholder="••••••••">
+              </div>
+              <div class="error-msg" *ngIf="passwordForm.hasError('mismatch') && passwordForm.get('confirmPassword')?.touched">
+                Passwords do not match
+              </div>
+              <button type="submit" class="btn btn-primary btn-full" [disabled]="passwordForm.invalid">
+                Update Password
+              </button>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>

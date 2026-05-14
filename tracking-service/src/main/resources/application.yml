@@ -1,9 +1,18 @@
-server:
-  port: 8083
-
 spring:
   application:
     name: tracking-service
+  config:
+    import: optional:configserver:http://localhost:8889
+  cloud:
+    config:
+      retry:
+        initial-interval: 3000
+        multiplier: 1.5
+        max-attempts: 5
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
   datasource:
     url: jdbc:mysql://localhost:3306/tracking_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: root
@@ -16,30 +25,16 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
-  servlet:
-    multipart:
-      max-file-size: 10MB
-      max-request-size: 10MB
-
-file:
-  upload-dir: ./uploads
-
-springdoc:
-  api-docs:
-    path: /api-docs
-  swagger-ui:
-    path: /swagger-ui.html
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
 
 eureka:
   client:
     serviceUrl:
       defaultZone: http://localhost:8761/eureka/
 
-management:
-  tracing:
-    sampling:
-      probability: 1.0
-
-  zipkin:
-    tracing:
-      endpoint: http://localhost:9411/api/v2/spans
+file:
+  upload-dir: uploads/

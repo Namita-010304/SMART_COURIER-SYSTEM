@@ -6,10 +6,10 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "deliveries")
-@Getter 
-@Setter 
-@NoArgsConstructor 
-@AllArgsConstructor 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class Delivery {
 
@@ -23,16 +23,16 @@ public class Delivery {
     @Column(nullable = false)
     private String username;
 
-    @ManyToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "sender_address_id", nullable = false)
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "sender_address_id", nullable = true)
     private Address senderAddress;
 
-    @ManyToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "receiver_address_id", nullable = false)
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "receiver_address_id", nullable = true)
     private Address receiverAddress;
 
-    @ManyToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "package_id", nullable = false)
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "package_id")
     private ParcelPackage parcelPackage;
 
     @Enumerated(EnumType.STRING)
@@ -42,6 +42,9 @@ public class Delivery {
     private Double charge;
 
     private LocalDateTime scheduledPickup;
+
+    @Column(columnDefinition = "boolean default false")
+    private boolean paid;
 
     private String specialInstructions;
 

@@ -1,0 +1,156 @@
+<div class="customer-page">
+
+  <!-- Top Header Bar -->
+  <div class="page-topbar">
+    <div>
+      <h2 class="page-title">Welcome back, <span class="name-highlight">{{ username }}</span> 👋</h2>
+      <p class="page-subtitle">Here's a live overview of your deliveries.</p>
+    </div>
+    <a routerLink="/wizard" class="btn btn-primary">
+      <i class="bi bi-plus-lg"></i> New Delivery
+    </a>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-row">
+    <div class="kpi-card" *ngFor="let stat of stats">
+      <div class="kpi-icon-wrap" [ngClass]="stat.color">
+        <i class="bi" [ngClass]="stat.icon"></i>
+      </div>
+      <div class="kpi-info">
+        <span class="kpi-label">{{ stat.label }}</span>
+        <span class="kpi-value">{{ stat.value }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="dash-grid">
+
+    <!-- Left: Recent Deliveries -->
+    <div class="glass-card deliveries-card">
+      <div class="card-top">
+        <h3>Recent Deliveries</h3>
+        <a routerLink="/customer/deliveries" class="view-all-link">
+          View All <i class="bi bi-arrow-right-short"></i>
+        </a>
+      </div>
+
+      <!-- Loading -->
+      <div class="state-box" *ngIf="loading">
+        <i class="bi bi-arrow-repeat spin"></i>
+        <p>Loading your deliveries...</p>
+      </div>
+
+      <!-- Empty -->
+      <div class="state-box" *ngIf="!loading && deliveries.length === 0">
+        <i class="bi bi-inbox" style="color:#e2e8f0"></i>
+        <p class="text-muted">No deliveries yet.</p>
+        <a routerLink="/wizard" class="btn btn-primary btn-sm" style="margin-top:1rem">
+          <i class="bi bi-plus-lg"></i> Create First Delivery
+        </a>
+      </div>
+
+      <!-- Table -->
+      <div class="table-responsive" *ngIf="!loading && deliveries.length > 0">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Tracking No.</th>
+              <th>Destination</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let d of deliveries">
+              <td>
+                <span class="tracking-no">{{ d.trackingNumber }}</span>
+              </td>
+              <td class="text-muted">{{ d.receiverAddress?.city || 'N/A' }}</td>
+              <td><app-status-badge [status]="d.status"></app-status-badge></td>
+              <td class="text-muted small-text">{{ d.createdAt | date:'mediumDate' }}</td>
+              <td>
+                <a [routerLink]="['/track', d.trackingNumber]" class="icon-btn" title="Track Parcel">
+                  <i class="bi bi-geo-alt-fill"></i>
+                </a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Right: Sidebar -->
+    <div class="sidebar-col">
+
+      <!-- Track Widget -->
+      <div class="glass-card track-widget">
+        <div class="track-widget-header">
+          <i class="bi bi-geo-alt-fill"></i>
+          <h3>Track a Parcel</h3>
+        </div>
+        <p class="track-hint">
+          Enter your tracking number below. You can copy it from
+          <a routerLink="/customer/deliveries" class="inline-link">My Deliveries</a>.
+        </p>
+        <div class="track-format-hint">
+          <i class="bi bi-info-circle-fill"></i>
+          Format: <strong>SC-YYYYMMDD-XXXX</strong>
+        </div>
+        <div class="track-input-row">
+          <input
+            type="text"
+            [(ngModel)]="trackInput"
+            placeholder="SC-20250430-1234"
+            (keyup.enter)="trackParcel()"
+            class="track-input"
+          />
+          <button class="btn btn-primary" (click)="trackParcel()">
+            Track
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="glass-card quick-card">
+        <h3>Quick Actions</h3>
+        <div class="quick-list">
+          <a routerLink="/customer/deliveries" class="quick-item">
+            <div class="quick-icon blue"><i class="bi bi-list-ul"></i></div>
+            <span>All Deliveries</span>
+            <i class="bi bi-chevron-right quick-arrow"></i>
+          </a>
+          <a routerLink="/wizard" class="quick-item">
+            <div class="quick-icon green"><i class="bi bi-plus-circle"></i></div>
+            <span>New Delivery</span>
+            <i class="bi bi-chevron-right quick-arrow"></i>
+          </a>
+          <a routerLink="/profile" class="quick-item">
+            <div class="quick-icon purple"><i class="bi bi-person-circle"></i></div>
+            <span>My Profile</span>
+            <i class="bi bi-chevron-right quick-arrow"></i>
+          </a>
+          <a routerLink="/track" class="quick-item">
+            <div class="quick-icon orange"><i class="bi bi-search"></i></div>
+            <span>Track Any Parcel</span>
+            <i class="bi bi-chevron-right quick-arrow"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- Live Timeline -->
+      <div class="glass-card" *ngIf="timelineEvents.length > 0">
+        <div class="card-top" style="margin-bottom:1rem">
+          <h3>Live Tracking</h3>
+          <a [routerLink]="['/track', activeTrackingNumber]" class="view-all-link">
+            Full Details <i class="bi bi-arrow-right-short"></i>
+          </a>
+        </div>
+        <app-delivery-timeline [events]="timelineEvents"></app-delivery-timeline>
+      </div>
+
+    </div>
+  </div>
+</div>

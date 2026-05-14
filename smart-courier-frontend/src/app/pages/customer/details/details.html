@@ -1,0 +1,103 @@
+<div class="container section pt-4">
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="text-center p-4">
+    <p class="text-muted">Loading delivery details...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="text-center p-4">
+    <p class="text-danger">Failed to load delivery. Please try again.</p>
+    <a routerLink="/customer/deliveries" class="btn btn-outline mt-3">Back to Deliveries</a>
+  </div>
+
+  <!-- Content -->
+  <div *ngIf="!loading && !error && delivery">
+    <div class="page-header">
+      <div class="flex-align gap-2">
+        <a routerLink="/customer/deliveries" class="icon-btn"><i class="bi bi-arrow-left"></i></a>
+        <div>
+          <h2>Delivery Details</h2>
+          <p class="text-muted">Tracking ID: <span class="font-bold text-primary">{{delivery.trackingNumber}}</span></p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <app-status-badge [status]="delivery.status"></app-status-badge>
+      </div>
+    </div>
+
+    <div class="details-grid grid">
+      <div class="main-details">
+        <div class="glass-card mb-4">
+          <div class="card-header">
+            <h3>Information</h3>
+          </div>
+          <div class="info-grid">
+            <div class="info-group">
+              <h4 class="small-text uppercase text-muted">Sender</h4>
+              <p class="font-bold">{{delivery.senderAddress?.fullName || 'N/A'}}</p>
+              <p class="small-text">{{delivery.senderAddress?.street}}, {{delivery.senderAddress?.city}}, {{delivery.senderAddress?.zipCode}}</p>
+              <p class="small-text">{{delivery.senderAddress?.phone}}</p>
+            </div>
+            <div class="info-group">
+              <h4 class="small-text uppercase text-muted">Receiver</h4>
+              <p class="font-bold">{{delivery.receiverAddress?.fullName || 'N/A'}}</p>
+              <p class="small-text">{{delivery.receiverAddress?.street}}, {{delivery.receiverAddress?.city}}, {{delivery.receiverAddress?.zipCode}}</p>
+              <p class="small-text">{{delivery.receiverAddress?.phone}}</p>
+            </div>
+            <div class="info-group">
+              <h4 class="small-text uppercase text-muted">Package Details</h4>
+              <p><span class="text-muted">Type:</span> {{delivery.packageDetails?.description || 'N/A'}}</p>
+              <p><span class="text-muted">Weight:</span> {{delivery.packageDetails?.weight}} kg</p>
+              <p><span class="text-muted">Size:</span> {{delivery.packageDetails?.length}}x{{delivery.packageDetails?.width}}x{{delivery.packageDetails?.height}} cm</p>
+            </div>
+            <div class="info-group">
+              <h4 class="small-text uppercase text-muted">Service</h4>
+              <p class="font-bold">{{delivery.packageDetails?.serviceType || 'N/A'}}</p>
+              <p class="small-text">Booked: {{delivery.createdAt | date:'mediumDate'}}</p>
+              <p class="small-text text-primary font-bold">Charge: ${{delivery.charge || '0.00'}}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-card">
+          <div class="card-header">
+            <h3>Parcel Journey</h3>
+          </div>
+          <div class="timeline-container">
+            <app-delivery-timeline [events]="timelineEvents"></app-delivery-timeline>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-details">
+        <div class="glass-card mb-4">
+          <h3>Quick Actions</h3>
+          <div class="action-list mt-3">
+            <a [routerLink]="['/customer/documents', delivery.id]" class="action-btn">
+              <i class="bi bi-file-earmark-arrow-up"></i>
+              <span>Upload Documents</span>
+              <i class="bi bi-chevron-right ms-auto"></i>
+            </a>
+            <a [routerLink]="['/track', delivery.trackingNumber]" class="action-btn">
+              <i class="bi bi-geo-alt"></i>
+              <span>Live Tracking</span>
+              <i class="bi bi-chevron-right ms-auto"></i>
+            </a>
+            <a *ngIf="delivery.status === 'DELIVERED'" [routerLink]="['/customer/confirmation', delivery.id]" class="action-btn">
+              <i class="bi bi-patch-check"></i>
+              <span>View Proof of Delivery</span>
+              <i class="bi bi-chevron-right ms-auto"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="glass-card">
+          <h3>Need Help?</h3>
+          <p class="small-text text-muted mt-2">Our support team is available 24/7 for any questions regarding this shipment.</p>
+          <button class="btn btn-outline btn-full mt-3">Contact Support</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

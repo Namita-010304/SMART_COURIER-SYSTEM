@@ -1,0 +1,150 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h2>Hub Management</h2>
+      <p class="text-muted">Configure and monitor logistics distribution centers.</p>
+    </div>
+    <button class="btn btn-primary" (click)="showAddModal = true">
+      <i class="bi bi-plus-circle"></i> Add Hub
+    </button>
+  </div>
+
+  <div class="glass-card table-card mt-4">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Hub Name</th> 
+            <th>Code</th> 
+            <th>City</th>
+            <th>Contact</th> 
+            <th>Status</th>   
+            <th>Actions</th> 
+          </tr>   
+        </thead>    
+        <tbody>   
+          <tr *ngFor="let hub of hubs">  
+            <td class="font-bold">{{hub.name}}</td>
+            <td><code>{{hub.code}}</code></td>
+            <td>{{hub.city}}</td> 
+            <td class="text-muted">{{hub.contactPhone || hub.phone || 'N/A'}}</td>
+            <td>
+              <div class="toggle-switch" (click)="toggleHub(hub)" [class.active]="hub.active">
+                <div class="switch-knob"></div>
+              </div>
+            </td>
+            <td class="actions-cell">
+              <button class="icon-btn" (click)="openEditModal(hub)" title="Edit"><i class="bi bi-pencil"></i></button>
+              <button class="icon-btn text-danger" (click)="confirmDelete(hub)" title="Delete"><i class="bi bi-trash"></i></button>
+            </td>
+          </tr>
+          <tr *ngIf="hubs.length === 0">
+            <td colspan="6" class="text-muted text-center">No hubs found</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+ 
+  <!-- Add Hub Modal -->
+  <div class="modal-overlay" *ngIf="showAddModal">
+    <div class="glass-card modal-card">
+      <div class="modal-header">
+        <h3>Add New Hub</h3>
+        <button class="icon-btn" (click)="showAddModal = false"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <form [formGroup]="hubForm" (ngSubmit)="addHub()" class="modal-form">
+        <div class="form-group">
+          <label>HUB NAME</label>
+          <input type="text" formControlName="name" class="form-input" placeholder="e.g., London Central">
+        </div>
+        <div class="form-group">
+          <label>HUB CODE</label>
+          <input type="text" formControlName="code" class="form-input" placeholder="e.g., HUB-LON-01">
+        </div>
+        <div class="form-group">
+          <label>CITY</label>
+          <input type="text" formControlName="city" class="form-input">
+        </div>
+        <div class="form-group">
+          <label>STATE</label>
+          <input type="text" formControlName="state" class="form-input" placeholder="e.g., England">
+        </div>
+        <div class="form-group">
+          <label>ADDRESS <span class="text-muted">(optional)</span></label>
+          <input type="text" formControlName="address" class="form-input" placeholder="Street address">
+        </div>
+        <div class="form-group">
+          <label>CONTACT PHONE</label>
+          <input type="text" formControlName="contactPhone" class="form-input">
+        </div>
+        <div class="form-group">
+          <label>CONTACT EMAIL <span class="text-muted">(optional)</span></label>
+          <input type="email" formControlName="contactEmail" class="form-input" placeholder="hub@company.com">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" (click)="showAddModal = false">Cancel</button>
+          <button type="submit" class="btn btn-primary" [disabled]="hubForm.invalid">Save Hub</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Hub Modal -->
+  <div class="modal-overlay" *ngIf="showEditModal">
+    <div class="glass-card modal-card">
+      <div class="modal-header">
+        <h3>Edit Hub</h3>
+        <button class="icon-btn" (click)="showEditModal = false"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <form [formGroup]="editForm" (ngSubmit)="saveEdit()" class="modal-form">
+        <div class="form-group">
+          <label>HUB NAME</label>
+          <input type="text" formControlName="name" class="form-input">
+        </div>
+        <div class="form-group">
+          <label>HUB CODE</label>
+          <input type="text" formControlName="code" class="form-input" readonly style="opacity:0.6;cursor:not-allowed">
+        </div>
+        <div class="form-group">
+          <label>CITY</label>
+          <input type="text" formControlName="city" class="form-input">
+        </div>
+        <div class="form-group">
+          <label>STATE</label>
+          <input type="text" formControlName="state" class="form-input">
+        </div>
+        <div class="form-group">
+          <label>ADDRESS <span class="text-muted">(optional)</span></label>
+          <input type="text" formControlName="address" class="form-input">
+        </div>
+        <div class="form-group">
+          <label>CONTACT PHONE</label>
+          <input type="text" formControlName="contactPhone" class="form-input">
+        </div>
+        <div class="form-group">
+          <label>CONTACT EMAIL <span class="text-muted">(optional)</span></label>
+          <input type="email" formControlName="contactEmail" class="form-input">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" (click)="showEditModal = false">Cancel</button>
+          <button type="submit" class="btn btn-primary" [disabled]="editForm.invalid">Update</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation -->
+  <div class="modal-overlay" *ngIf="showDeleteModal">
+    <div class="glass-card modal-card">
+      <div class="modal-header">
+        <h3>Delete Hub</h3>
+      </div>
+      <p class="text-muted" style="padding:0 0 1.5rem">Are you sure you want to delete hub <strong>{{hubToDelete?.name}}</strong>?</p>
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="showDeleteModal = false">Cancel</button>
+        <button class="btn btn-danger" (click)="deleteHub()">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>

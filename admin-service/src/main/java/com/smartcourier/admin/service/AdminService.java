@@ -2,15 +2,20 @@ package com.smartcourier.admin.service;
 
 import com.smartcourier.admin.client.DeliveryClient;
 import com.smartcourier.admin.client.TrackingClient;
+import com.smartcourier.admin.dto.AdminUserCreateRequest;
+import com.smartcourier.admin.dto.AdminUserUpdateRequest;
 import com.smartcourier.admin.entity.Hub;
 import com.smartcourier.admin.entity.Report;
 import com.smartcourier.admin.repository.HubRepository;
 import com.smartcourier.admin.repository.ReportRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.Locale;
 
+@Slf4j
 @Service
 public class AdminService {
 
@@ -34,29 +39,31 @@ public class AdminService {
     public Map<String, Object> getDashboardData() {
         Map<String, Object> dashboard = new HashMap<>();
 
+        // Get status distribution first — use it for totalDeliveries too
+        Map<String, Long> dist = new HashMap<>();
         try {
-            List<Object> deliveries = deliveryClient.getAllDeliveries();
-            int totalDeliveries = deliveries != null ? deliveries.size() : 0;
-            dashboard.put("totalDeliveries", totalDeliveries);
+            dist = deliveryClient.getStatusDistribution();
         } catch (Exception e) {
-            dashboard.put("totalDeliveries", 0);
+            log.error("Failed to fetch status distribution: {}", e.getMessage());
+            // Return partial dashboard rather than silently zeroing out counts
+            dashboard.put("statusDistribution", dist);
+            dashboard.put("totalDeliveries", -1L);
+            dashboard.put("totalHubs", hubRepository.count());
+            dashboard.put("activeHubs", hubRepository.findByActive(true).size());
+            dashboard.put("totalReports", reportRepository.count());
+            dashboard.put("timestamp", LocalDateTime.now());
+            return dashboard;
         }
+        dashboard.put("statusDistribution", dist);
+
+        // Sum all statuses — DeliveryService guarantees every DeliveryStatus key is present
+        long totalDeliveries = dist.values().stream().mapToLong(Long::longValue).sum();
+        dashboard.put("totalDeliveries", totalDeliveries);
 
         dashboard.put("totalHubs", hubRepository.count());
         dashboard.put("activeHubs", hubRepository.findByActive(true).size());
         dashboard.put("totalReports", reportRepository.count());
         dashboard.put("timestamp", LocalDateTime.now());
-
-        // Mock status distribution
-        Map<String, Integer> statusDistribution = new LinkedHashMap<>();
-        statusDistribution.put("BOOKED", 12);
-        statusDistribution.put("PICKED_UP", 8);
-        statusDistribution.put("IN_TRANSIT", 15);
-        statusDistribution.put("OUT_FOR_DELIVERY", 5);
-        statusDistribution.put("DELIVERED", 45);
-        statusDistribution.put("DELAYED", 3);
-        statusDistribution.put("FAILED", 1);
-        dashboard.put("statusDistribution", statusDistribution);
 
         // Mock performance metrics
         Map<String, Object> performance = new HashMap<>();
@@ -70,41 +77,44 @@ public class AdminService {
 
     // ========== Deliveries (via Delivery Service) ==========
     public List<Object> getAllDeliveries() {
-        try {
-            return deliveryClient.getAllDeliveries();
-        } catch (Exception e) {
-            return Collections.emptyList();
-        }
+        return deliveryClient.getAllDeliveries();
     }
 
-    public Object resolveDeliveryException(Long deliveryId, String resolution) {
-        try {
-            // Update delivery status
-            deliveryClient.updateStatus(deliveryId, resolution);
-            
-            // Record tracking event
-            try {
-                // Get tracking number first
-                Map<String, Object> delivery = deliveryClient.getDeliveryById(deliveryId);
-                if (delivery != null) {
-                    String trackingNumber = (String) delivery.get("trackingNumber");
-                    trackingClient.addTrackingEvent(deliveryId, trackingNumber, resolution, 
-                        "Admin Hub", "Exception resolved by administrator");
-                }
-            } catch (Exception te) {
-                // Log and continue if tracking fails
-                System.err.println("Failed to add tracking event: " + te.getMessage());
-            }
+    public Object getDeliveryById(Long id) {
+        return deliveryClient.getDeliveryById(id);
+    }
 
-            Map<String, Object> result = new HashMap<>();
-            result.put("deliveryId", deliveryId);
-            result.put("resolution", resolution);
-            result.put("resolvedAt", LocalDateTime.now());
-            result.put("message", "Delivery exception resolved successfully");
-            return result;
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to resolve delivery exception: " + e.getMessage());
+    public Object resolveDeliveryException(Long deliveryId, String resolution, String username, String role) {
+        // Update delivery status — resolution must be a valid DeliveryStatus value
+        String statusValue = resolution.toUpperCase(java.util.Locale.ROOT).trim();
+        deliveryClient.updateStatus(deliveryId, statusValue, username, role, "Admin resolved exception: " + statusValue);
+        
+        // Record tracking event
+        try {
+            // Get tracking number first
+            Map<String, Object> delivery = deliveryClient.getDeliveryById(deliveryId);
+            if (delivery != null) {
+                String trackingNumber = (String) delivery.get("trackingNumber");
+                if (trackingNumber != null) {
+                    Map<String, Object> trackingRequest = new java.util.HashMap<>();
+                    trackingRequest.put("deliveryId", deliveryId);
+                    trackingRequest.put("trackingNumber", trackingNumber);
+                    trackingRequest.put("status", statusValue);
+                    trackingRequest.put("location", "Admin Hub");
+                    trackingRequest.put("description", "Exception resolved by administrator");
+                    trackingClient.addTrackingEvent(trackingRequest);
+                }
+            }
+        } catch (Exception te) {
+            log.error("Failed to add tracking event during resolution: {}", te.getMessage());
         }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("deliveryId", deliveryId);
+        result.put("resolution", resolution);
+        result.put("resolvedAt", LocalDateTime.now());
+        result.put("message", "Delivery exception resolved successfully");
+        return result;
     }
 
     // ========== Hubs ==========
@@ -140,11 +150,19 @@ public class AdminService {
 
     // ========== Users (via Auth Service) ==========
     public List<Object> getAllUsers() {
-        try { 
-            return authClient.getAllUsers();
-        } catch (Exception e) {
-            return Collections.emptyList();
-        }
+        return authClient.getAllUsers("ADMIN");
+    }
+
+    public Object createUser(AdminUserCreateRequest request) {
+        return authClient.createUser(request, "ADMIN");
+    }
+
+    public Object updateUser(Long id, AdminUserUpdateRequest request) {
+        return authClient.updateUser(id, request, "ADMIN");
+    }
+
+    public void deleteUser(Long id) {
+        authClient.deleteUser(id, "ADMIN");
     }
 
     // ========== Reports ==========
@@ -157,14 +175,15 @@ public class AdminService {
         reportData.put("type", type);
         reportData.put("generatedAt", LocalDateTime.now());
 
-        switch (type.toUpperCase()) {
+        switch (type.toUpperCase(Locale.ROOT)) {
             case "DELIVERY_SUMMARY":
-                reportData.put("totalDeliveries", 89);
-                reportData.put("completed", 45);
-                reportData.put("inTransit", 15);
-                reportData.put("pending", 20);
-                reportData.put("failed", 1);
-                reportData.put("delayed", 3);
+                try {
+                    Map<String, Long> stats = deliveryClient.getStatusDistribution();
+                    reportData.putAll(stats);
+                    reportData.put("total", stats.values().stream().mapToLong(Long::longValue).sum());
+                } catch (Exception e) {
+                    reportData.put("error", "Failed to fetch real delivery stats");
+                }
                 break;
             case "PERFORMANCE":
                 reportData.put("avgDeliveryTime", "2.5 days");
@@ -175,7 +194,6 @@ public class AdminService {
             case "HUB_UTILIZATION":
                 reportData.put("totalHubs", hubRepository.count());
                 reportData.put("activeHubs", hubRepository.findByActive(true).size());
-                reportData.put("avgPackagesPerHub", 125);
                 break;
             default:
                 reportData.put("info", "General report");

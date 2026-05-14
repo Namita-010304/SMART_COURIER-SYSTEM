@@ -1,0 +1,49 @@
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <div class="sidebar-header">
+      <i class="bi bi-box-seam-fill"></i>
+      <span>SmartCourier Admin</span>
+    </div> 
+    <nav class="sidebar-nav">
+      <a routerLink="/admin/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">
+        <i class="bi bi-speedometer2"></i> Dashboard
+      </a>
+      <a routerLink="/admin/monitoring" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">
+        <i class="bi bi-display"></i> Delivery Monitoring
+      </a>
+      <a routerLink="/admin/users" routerLinkActive="active">
+        <i class="bi bi-people"></i> User Management
+      </a>
+      <a routerLink="/admin/hubs" routerLinkActive="active">
+        <i class="bi bi-building"></i> Hub Management
+      </a>
+      <a routerLink="/admin/reports" routerLinkActive="active">
+        <i class="bi bi-file-earmark-bar-graph"></i> Reports
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="logout-btn" (click)="logout()">
+        <i class="bi bi-box-arrow-left"></i> Logout
+      </button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <header class="admin-topbar">
+      <div class="search-bar">
+        <i class="bi bi-search"></i>
+        <input type="text" placeholder="Search system-wide...">
+      </div>
+      <div class="topbar-actions">
+        <div class="admin-profile" routerLink="/profile">
+          <div class="avatar-sm">{{ adminUsername.charAt(0).toUpperCase() }}</div>
+          <span>{{ adminUsername }}</span> 
+        </div>
+      </div>
+    </header>
+    <div class="admin-content"> 
+      <router-outlet></router-outlet> 
+    </div>
+  </main> 
+</div>
+ 

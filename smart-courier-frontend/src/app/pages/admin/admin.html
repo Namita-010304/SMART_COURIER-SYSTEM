@@ -1,0 +1,258 @@
+<div class="admin-page">
+
+  <!-- Full-page loading spinner -->
+  <div *ngIf="loading" class="loading-state">
+    <app-loading-spinner></app-loading-spinner>
+    <p class="text-muted mt-3">Loading admin dashboard...</p>
+  </div>
+
+  <!-- ===== DASHBOARD TAB ===== -->
+  <div *ngIf="activeTab === 'dashboard' && !loading">
+    <div class="kpi-grid grid grid-5">
+      <div class="glass-card kpi-card" *ngFor="let stat of stats">
+        <div class="kpi-icon" [ngClass]="stat.color"><i class="bi" [ngClass]="stat.icon"></i></div>
+        <div class="kpi-data">
+          <p class="small-text uppercase text-muted">{{stat.label}}</p>
+          <h3>{{stat.value}}</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="dashboard-layout grid grid-2 mt-4">
+      <div class="glass-card chart-section">
+        <div class="flex-between mb-4">
+          <h3>Deliveries by Status</h3>
+        </div>
+        <div *ngIf="statusDistribution.length === 0" class="chart-placeholder">
+          <i class="bi bi-bar-chart"></i>
+          <p>No data yet</p>
+        </div>
+        <div class="status-bars" *ngIf="statusDistribution.length > 0">
+          <div *ngFor="let s of statusDistribution" class="status-bar-row">
+            <div class="status-bar-label">{{s.label}}</div>
+            <div class="status-bar-track">
+              <div class="status-bar-fill" [style.width.%]="(s.count / +stats[0].value) * 100" [style.background]="s.color"></div>
+            </div>
+            <span class="status-bar-count">{{s.count}}</span>
+          </div>
+        </div>
+      </div>
+      <div class="glass-card chart-section">
+        <div class="flex-between mb-4">
+          <h3>Status Distribution</h3>
+        </div>
+        <div *ngIf="statusDistribution.length === 0" class="chart-placeholder circle">
+          <i class="bi bi-pie-chart"></i>
+          <p>No data yet</p>
+        </div>
+        <div class="donut-legend" *ngIf="statusDistribution.length > 0">
+          <div *ngFor="let s of statusDistribution" class="legend-item">
+            <span class="legend-dot" [style.background]="s.color"></span>
+            <span class="legend-label">{{s.label}}</span>
+            <span class="legend-pct">{{((s.count / +stats[0].value) * 100).toFixed(0)}}%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Exceptions -->
+    <div class="glass-card mt-4">
+      <div class="flex-between mb-4">
+        <h3>Recent Exceptions</h3>
+        <a routerLink="/admin/monitoring" class="btn btn-outline btn-sm">View All</a>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Tracking No.</th>
+              <th>Customer</th>
+              <th>Status</th>
+              <th>Origin City</th>
+              <th>Date</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let ex of exceptions">
+              <td class="font-bold text-danger">{{ex.id}}</td>
+              <td class="small-text">{{ex.trackingNumber || 'N/A'}}</td>
+              <td>{{ex.username || 'N/A'}}</td>
+              <td><app-status-badge [status]="ex.status"></app-status-badge></td>
+              <td class="text-muted">{{ex.senderAddress?.city || 'N/A'}}</td>
+              <td>{{ex.createdAt | date:'mediumDate'}}</td>
+              <td><button class="btn btn-primary btn-sm" (click)="resolveException(ex)">Resolve</button></td>
+            </tr>
+            <tr *ngIf="exceptions.length === 0">
+              <td colspan="7" class="text-muted text-center">No exceptions found</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MONITORING TAB ===== -->
+  <div *ngIf="activeTab === 'monitoring' && !loading">
+    <div class="glass-card">
+      <div class="flex-between mb-4">
+        <h2>System-wide Deliveries</h2>
+        <div class="flex gap-2">
+          <button class="btn btn-outline btn-sm" [class.active]="deliveryFilter === 'ALL'" (click)="setDeliveryFilter('ALL')">All</button>
+          <button class="btn btn-outline btn-sm text-danger" [class.active]="deliveryFilter === 'EXCEPTIONS'" (click)="setDeliveryFilter('EXCEPTIONS')">Exceptions</button>
+          <button class="btn btn-outline btn-sm" [class.active]="deliveryFilter === 'DELIVERED'" (click)="setDeliveryFilter('DELIVERED')">Delivered</button>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Customer</th>
+              <th>Tracking No</th>
+              <th>Status</th>
+              <th>Origin City</th>
+              <th>Created Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let d of filteredDeliveries">
+              <td>{{d.id}}</td>
+              <td>{{d.username || 'N/A'}}</td>
+              <td class="small-text">{{d.trackingNumber || 'N/A'}}</td>
+              <td><app-status-badge [status]="d.status"></app-status-badge></td>
+              <td class="text-muted">{{d.senderAddress?.city || 'N/A'}}</td>
+              <td>{{d.createdAt | date:'mediumDate'}}</td>
+              <td>
+                <button class="icon-btn" *ngIf="d.status === 'FAILED' || d.status === 'DELAYED'" (click)="resolveException(d)" title="Resolve">
+                  <i class="bi bi-check-circle"></i>
+                </button>
+                <button class="icon-btn text-warning" *ngIf="d.status !== 'FAILED' && d.status !== 'DELAYED' && d.status !== 'DELIVERED'" (click)="markAsDelayed(d)" title="Mark as Delayed">
+                  <i class="bi bi-exclamation-triangle"></i>
+                </button>
+                <button class="icon-btn text-primary" *ngIf="getNextStatuses(d.status).length > 0" (click)="openStatusModal(d)" title="Update Status">
+                  <i class="bi bi-arrow-repeat"></i>
+                </button>
+                <button class="icon-btn text-success" *ngIf="d.status === 'DELIVERED'" (click)="viewProof(d)" title="View Proof of Delivery">
+                  <i class="bi bi-patch-check-fill"></i>
+                </button>
+                <a [routerLink]="['/track', d.trackingNumber]" class="icon-btn" title="Track" *ngIf="d.trackingNumber">
+                  <i class="bi bi-geo-alt"></i>
+                </a>
+              </td>
+            </tr>
+            <tr *ngIf="filteredDeliveries.length === 0">
+              <td colspan="7" class="text-muted text-center">No deliveries found</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Resolve Exception Modal -->
+<div class="modal-overlay" *ngIf="showResolveModal">
+  <div class="modal-card glass-card form-modal">
+    <h3>Resolve Exception</h3>
+    <p class="text-muted mb-3">{{ getResolveMessage() }}</p>
+    <div class="form-group full-width">
+      <label>Resolution / New Status</label>
+      <select [(ngModel)]="resolveResolution" class="form-input">
+        <option *ngFor="let s of getNextStatuses(selectedException?.status)" [value]="s">{{s}}</option>
+      </select>
+    </div>
+    <div class="modal-actions mt-3">
+      <button class="btn btn-outline" (click)="showResolveModal = false; selectedException = null">Cancel</button>
+      <button class="btn btn-primary" (click)="confirmResolve()" [disabled]="!resolveResolution">Confirm Resolution</button>
+    </div>
+  </div>
+</div>
+
+<!-- Mark as Delayed Modal -->
+<div class="modal-overlay" *ngIf="showDelayModal">
+  <div class="modal-card glass-card form-modal">
+    <h3>Mark as Delayed</h3>
+    <p class="text-muted mb-3">Delivery <span class="font-bold">#{{delayTarget?.id}}</span> ({{delayTarget?.trackingNumber}}) will be set to <span class="font-bold text-warning">DELAYED</span>.</p>
+    <div class="form-group full-width">
+      <label>Reason (optional)</label>
+      <input type="text" [(ngModel)]="delayReason" placeholder="e.g. Weather disruption, customs hold...">
+    </div>
+    <div class="modal-actions mt-3">
+      <button class="btn btn-outline" (click)="showDelayModal = false">Cancel</button>
+      <button class="btn btn-warning" (click)="confirmMarkDelayed()">Confirm Delay</button>
+    </div>
+  </div>
+</div>
+
+<!-- Update Status Modal -->
+<div class="modal-overlay" *ngIf="showStatusModal">
+  <div class="modal-card glass-card form-modal">
+    <h3>Update Delivery Status</h3>
+    <p class="text-muted mb-3">Delivery <span class="font-bold">#{{statusTarget?.id}}</span> &mdash; current status: <span class="font-bold">{{statusTarget?.status}}</span></p>
+    <div class="form-group full-width">
+      <label>New Status</label>
+      <select [(ngModel)]="selectedStatus">
+        <option *ngFor="let s of getNextStatuses(statusTarget?.status)" [value]="s">{{s}}</option>
+      </select>
+    </div>
+    <div class="form-group full-width">
+      <label>Hub <span class="text-muted">(optional)</span></label>
+      <select [(ngModel)]="selectedHubId">
+        <option [ngValue]="null">-- No hub --</option>
+        <option *ngFor="let h of hubs" [ngValue]="h.id">{{h.name}} &mdash; {{h.city}}</option>
+      </select>
+    </div>
+    <div class="form-group full-width">
+      <label>Reason <span class="text-muted">(optional)</span></label>
+      <input type="text" [(ngModel)]="statusReason" placeholder="e.g. Delivered to recipient...">
+    </div>
+    <div class="modal-actions mt-3">
+      <button class="btn btn-outline" (click)="showStatusModal = false">Cancel</button>
+      <button class="btn btn-primary" (click)="confirmStatusUpdate()" [disabled]="!selectedStatus">Update</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="showProofModal">
+  <div class="modal-card glass-card form-modal">
+    <div class="flex-between mb-3">
+      <h3>Proof of Delivery — #{{proofDeliveryId}}</h3>
+      <button class="icon-btn" (click)="showProofModal = false"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div *ngIf="proofLoading" class="text-center p-4">
+      <p class="text-muted">Loading proof...</p>
+    </div>
+    <div *ngIf="!proofLoading && !proofData" class="text-center p-4">
+      <p class="text-muted">No proof of delivery recorded for this shipment.</p>
+    </div>
+    <div *ngIf="!proofLoading && proofData" class="proof-view">
+      <div class="proof-row">
+        <span class="small-text uppercase text-muted">Recipient</span>
+        <span class="font-bold">{{ proofData.recipientName }}</span>
+      </div>
+      <div class="proof-row">
+        <span class="small-text uppercase text-muted">Delivered At</span>
+        <span>{{ proofData.deliveredAt | date:'medium' }}</span>
+      </div>
+      <div class="proof-row" *ngIf="proofData.notes">
+        <span class="small-text uppercase text-muted">Notes</span>
+        <span>{{ proofData.notes }}</span>
+      </div>
+      <div class="proof-row" *ngIf="proofData.signatureUrl">
+        <span class="small-text uppercase text-muted">Signature</span>
+        <img [src]="proofData.signatureUrl" alt="Signature" style="max-height:60px;">
+      </div>
+      <div class="proof-row" *ngIf="proofData.photoUrl">
+        <span class="small-text uppercase text-muted">Photo</span>
+        <img [src]="proofData.photoUrl" alt="Delivery Photo" style="max-width:100%;border-radius:8px;">
+      </div>
+    </div>
+    <div class="modal-actions mt-3">
+      <button class="btn btn-outline" (click)="showProofModal = false">Close</button>
+    </div>
+  </div>
+</div>

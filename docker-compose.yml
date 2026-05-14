@@ -1,0 +1,278 @@
+version: '3.8'
+
+services:
+
+  # ─── MySQL Database ───────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: smartcourier-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: system
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-psystem"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - smartcourier-net
+
+  adminer:
+    image: adminer
+    container_name: adminer_ui
+    restart: always
+    ports:
+      - "8080:8080"
+    networks:
+      - smartcourier-net
+
+  # ─── RabbitMQ (Async Messaging) ────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    container_name: smartcourier-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - smartcourier-net
+
+  # ─── Zipkin (Distributed Tracing) ────────────────────────────────
+  zipkin:
+    image: openzipkin/zipkin:latest
+    container_name: smartcourier-zipkin
+    restart: unless-stopped
+    ports:
+      - "9411:9411"
+    networks:
+      - smartcourier-net
+
+  # ─── Service Registry (Eureka) ────────────────────────────────────
+  service-registry:
+    build:
+      context: ./ServiceRegistry
+      dockerfile: Dockerfile
+    container_name: smartcourier-service-registry
+    restart: unless-stopped
+    ports:
+      - "8761:8761"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
+    depends_on:
+      - zipkin
+    networks:
+      - smartcourier-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  # ─── Auth Service ─────────────────────────────────────────────────
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: smartcourier-auth-service
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/auth_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=system
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka/
+      - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
+    depends_on:
+      mysql:
+        condition: service_healthy
+      service-registry:
+        condition: service_healthy
+      config-server:
+        condition: service_started
+    networks:
+      - smartcourier-net
+
+  # ─── Delivery Service ─────────────────────────────────────────────
+  delivery-service:
+    build:
+      context: ./delivery-service
+      dockerfile: Dockerfile
+    container_name: smartcourier-delivery-service
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/delivery_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=system
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka/
+      - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=guest
+      - SPRING_RABBITMQ_PASSWORD=guest
+    depends_on:
+      mysql:
+        condition: service_healthy
+      service-registry:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      config-server:
+        condition: service_started
+    networks:
+      - smartcourier-net
+
+  # ─── Tracking Service ─────────────────────────────────────────────
+  tracking-service:
+    build:
+      context: ./tracking-service
+      dockerfile: Dockerfile
+    container_name: smartcourier-tracking-service
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/tracking_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=system
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka/
+      - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
+      - FILE_UPLOAD_DIR=/app/uploads
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=guest
+      - SPRING_RABBITMQ_PASSWORD=guest
+    volumes:
+      - tracking_uploads:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+      service-registry:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      config-server:
+        condition: service_started
+    networks:
+      - smartcourier-net
+
+  # ─── Admin Service ────────────────────────────────────────────────
+  admin-service:
+    build:
+      context: ./admin-service
+      dockerfile: Dockerfile
+    container_name: smartcourier-admin-service
+    restart: unless-stopped
+    ports:
+      - "8084:8084"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/admin_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=system
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka/
+      - MICROSERVICES_DELIVERY_SERVICE_URL=http://delivery-service:8082
+      - MICROSERVICES_TRACKING_SERVICE_URL=http://tracking-service:8083
+      - MICROSERVICES_AUTH_SERVICE_URL=http://auth-service:8081/auth
+      - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
+    depends_on:
+      mysql:
+        condition: service_healthy
+      service-registry:
+        condition: service_healthy
+      config-server:
+         condition: service_started
+    networks:
+      - smartcourier-net
+
+  # ─── API Gateway ──────────────────────────────────────────────────
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: smartcourier-api-gateway
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka/
+      - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
+    depends_on:
+      service-registry:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      delivery-service:
+        condition: service_started
+      tracking-service:
+        condition: service_started
+      admin-service:
+        condition: service_started
+      config-server:
+        condition: service_started
+    networks:
+      - smartcourier-net
+
+  # ─── SonarQube (Code Quality) ─────────────────────────────────────
+  sonarqube:
+    image: sonarqube:community
+    container_name: smartcourier-sonarqube
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    environment:
+      - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    networks:
+      - smartcourier-net
+
+  config-server:
+    build:
+      context: ./config-server
+      dockerfile: Dockerfile
+    container_name: smartcourier-config-server
+    ports:
+      - "8889:8889"
+    networks:
+      - smartcourier-net
+
+  frontend:
+    build:
+      context: ./smart-courier-frontend
+      dockerfile: Dockerfile
+    container_name: smartcourier-frontend
+    restart: unless-stopped
+    ports:
+      - "4200:80"
+    networks:
+      - smartcourier-net
+    depends_on:
+      - api-gateway
+volumes:
+  mysql_data:
+  tracking_uploads:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+
+networks:
+  smartcourier-net:
+    driver: bridge

@@ -22,6 +22,7 @@ public class DeliveryResponseDTO {
     private DeliveryStatus status;
     private Double charge;
     private String specialInstructions;
+    private boolean paid;
     private LocalDateTime scheduledPickup;
     private LocalDateTime createdAt;
 }

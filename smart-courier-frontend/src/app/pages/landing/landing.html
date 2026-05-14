@@ -1,0 +1,114 @@
+<section class="hero section">
+  <div class="container hero-grid">
+    <div class="hero-content">
+      <span class="badge badge-blue">FAST & SECURE</span>
+      <h1 class="hero-title">Reliable Delivery, <br><span class="gradient-text">Simplified Logistics</span></h1>
+      <p class="hero-desc">
+        Empowering businesses with surgical precision in parcel tracking and enterprise-grade fleet management. Your cargo, our commitment.
+      </p>
+      <div class="hero-actions">
+        <a routerLink="/signup" class="btn btn-primary">Get Started</a>
+        <a routerLink="/track" class="btn btn-outline">
+          <i class="bi bi-search"></i> Track a Parcel
+        </a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-item">
+          <h3>15M+</h3>
+          <p>Parcels Delivered</p>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <h3>99.9%</h3>
+          <p>On-time Delivery</p>
+        </div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="visual-card glass-card hover-scale">
+        <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=1000" alt="Logistics Dashboard" class="hero-img">
+        <div class="floating-badge">
+          <div class="icon-circle">
+            <i class="bi bi-truck"></i>
+          </div>
+          <div>
+            <p class="badge-title">TRK-882-90-D</p>
+            <p class="badge-sub">Package moving west</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="services section">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="section-title">Logistics Tailored to You</h2>
+      <p class="section-desc">From local errands to global freight, we provide high-velocity solutions for every scale.</p>
+    </div>
+
+    <div *ngIf="servicesLoading" class="text-center p-4">
+      <p class="text-muted">Loading services...</p>
+    </div>
+
+    <div class="grid grid-3" *ngIf="!servicesLoading">
+      <div *ngFor="let svc of services"
+           class="glass-card hover-scale"
+           [class.service-featured]="svc.featured">
+        <div class="service-icon">
+          <i class="bi" [ngClass]="svc.icon || 'bi-box-seam'"></i>
+        </div>
+        <h3>{{ svc.name }}</h3>
+        <p>{{ svc.description }}</p>
+        <ul class="service-list" *ngIf="svc.features?.length">
+          <li *ngFor="let f of svc.features">
+            <i class="bi bi-check2-circle"></i> {{ f }}
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="how-it-works section">
+  <div class="container text-center">
+    <span class="badge badge-blue">THE SMART WAY</span>
+    <h2 class="section-title">Shipping in Three Simple Steps</h2>
+    
+    <div class="steps-grid">
+      <div class="step-item">
+        <div class="step-icon"><i class="bi bi-calendar-check"></i></div>
+        <h4>1. Book</h4>
+        <p>Choose your destination and package type through our intuitive portal.</p>
+      </div>
+      <div class="step-line"></div>
+      <div class="step-item">
+        <div class="step-icon"><i class="bi bi-graph-up-arrow"></i></div>
+        <h4>2. Track</h4>
+        <p>Monitor your parcel's journey with real-time GPS and status updates.</p>
+      </div>
+      <div class="step-line"></div>
+      <div class="step-item">
+        <div class="step-icon"><i class="bi bi-box-seam"></i></div>
+        <h4>3. Deliver</h4>
+        <p>Seamless delivery with digital proof and recipient verification.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-section section">
+  <div class="container">
+    <div class="cta-card">
+      <div class="cta-content">
+        <h2>Ready to revolutionize your logistics pipeline?</h2>
+        <p>Join 10,000+ businesses who trust SmartCourier for their critical enterprise shipments.</p>
+        <div class="cta-actions">
+          <a routerLink="/signup" class="btn btn-primary">Create Business Account</a>
+          <a routerLink="/login" class="btn btn-outline-white">Sign In</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

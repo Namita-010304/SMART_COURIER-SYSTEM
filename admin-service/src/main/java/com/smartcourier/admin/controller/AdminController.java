@@ -1,9 +1,12 @@
 package com.smartcourier.admin.controller;
 
+import com.smartcourier.admin.dto.AdminUserCreateRequest;
+import com.smartcourier.admin.dto.AdminUserUpdateRequest;
 import com.smartcourier.admin.entity.Hub;
 import com.smartcourier.admin.entity.Report;
 import com.smartcourier.admin.service.AdminService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -11,7 +14,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/admin")
-@CrossOrigin(origins = "http://localhost:4200")
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
 
     private final AdminService adminService;
@@ -30,11 +33,18 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getAllDeliveries());
     }
 
+    @GetMapping("/deliveries/{id}")
+    public ResponseEntity<Object> getDeliveryById(@PathVariable Long id) {
+        return ResponseEntity.ok(adminService.getDeliveryById(id));
+    }
+
     @PutMapping("/deliveries/{id}/resolve")
     public ResponseEntity<Object> resolveException(
             @PathVariable Long id,
-            @RequestParam String resolution) {
-        return ResponseEntity.ok(adminService.resolveDeliveryException(id, resolution));
+            @RequestParam String resolution,
+            @RequestHeader(value = "X-User-Username", defaultValue = "admin") String username,
+            @RequestHeader(value = "X-User-Role", defaultValue = "ADMIN") String role) {
+        return ResponseEntity.ok(adminService.resolveDeliveryException(id, resolution, username, role));
     } //left 
 
     @GetMapping("/hubs")
@@ -66,6 +76,22 @@ public class AdminController {
     @GetMapping("/users") 
     public ResponseEntity<List<Object>> getAllUsers() {
         return ResponseEntity.ok(adminService.getAllUsers());
+    }
+
+    @PostMapping("/users")
+    public ResponseEntity<Object> createUser(@RequestBody AdminUserCreateRequest request) {
+        return ResponseEntity.ok(adminService.createUser(request));
+    }
+
+    @PutMapping("/users/{id}")
+    public ResponseEntity<Object> updateUser(@PathVariable Long id, @RequestBody AdminUserUpdateRequest request) {
+        return ResponseEntity.ok(adminService.updateUser(id, request));
+    }
+
+    @DeleteMapping("/users/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        adminService.deleteUser(id);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/reports")

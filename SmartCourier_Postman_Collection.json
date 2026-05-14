@@ -1,0 +1,446 @@
+{
+	"info": {
+		"_postman_id": "smart-courier-2024",
+		"name": "SmartCourier Delivery System",
+		"description": "Complete API collection for SmartCourier - all gateway endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{ "key": "baseUrl", "value": "http://localhost:9090" },
+		{ "key": "token", "value": "" },
+		{ "key": "adminToken", "value": "" },
+		{ "key": "deliveryId", "value": "1" },
+		{ "key": "trackingNumber", "value": "SC-XXXXXX" }
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+	},
+	"item": [
+		{
+			"name": "01 - Landing Page (Services)",
+			"item": [
+				{
+					"name": "GET Services Catalog",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/gateway/services", "host": ["{{baseUrl}}"], "path": ["gateway", "services"] },
+						"auth": { "type": "noauth" }
+					}
+				}
+			]
+		},
+		{
+			"name": "02 - Auth (Signup & Login)",
+			"item": [
+				{
+					"name": "POST Signup",
+					"event": [{ "listen": "test", "script": { "exec": ["var json = pm.response.json();", "if(json.token) pm.collectionVariables.set('token', json.token);"] } }],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"username\": \"johndoe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\",\n  \"fullName\": \"John Doe\",\n  \"phone\": \"9876543210\",\n  \"role\": \"CUSTOMER\"\n}" },
+						"url": { "raw": "{{baseUrl}}/gateway/auth/signup", "host": ["{{baseUrl}}"], "path": ["gateway", "auth", "signup"] },
+						"auth": { "type": "noauth" }
+					}
+				},
+				{
+					"name": "POST Login (Customer)",
+					"event": [{ "listen": "test", "script": { "exec": ["var json = pm.response.json();", "if(json.token) pm.collectionVariables.set('token', json.token);"] } }],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"username\": \"johndoe\",\n  \"password\": \"password123\"\n}" },
+						"url": { "raw": "{{baseUrl}}/gateway/auth/login", "host": ["{{baseUrl}}"], "path": ["gateway", "auth", "login"] },
+						"auth": { "type": "noauth" }
+					}
+				},
+				{
+					"name": "POST Login (Admin)",
+					"event": [{ "listen": "test", "script": { "exec": ["var json = pm.response.json();", "if(json.token) pm.collectionVariables.set('adminToken', json.token);"] } }],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}" },
+						"url": { "raw": "{{baseUrl}}/gateway/auth/login", "host": ["{{baseUrl}}"], "path": ["gateway", "auth", "login"] },
+						"auth": { "type": "noauth" }
+					}
+				}
+			]
+		},
+		{
+			"name": "03 - Customer Dashboard",
+			"item": [
+				{
+					"name": "GET My Deliveries",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/gateway/deliveries/my", "host": ["{{baseUrl}}"], "path": ["gateway", "deliveries", "my"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "04 - Create Delivery",
+			"item": [
+				{
+					"name": "POST Create Delivery (Full)",
+					"event": [{ "listen": "test", "script": { "exec": ["var json = pm.response.json();", "if(json.id) pm.collectionVariables.set('deliveryId', json.id);", "if(json.trackingNumber) pm.collectionVariables.set('trackingNumber', json.trackingNumber);"] } }],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"senderAddress\": {\n    \"fullName\": \"John Doe\",\n    \"phone\": \"9876543210\",\n    \"street\": \"123 Main St\",\n    \"city\": \"Mumbai\",\n    \"state\": \"Maharashtra\",\n    \"zipCode\": \"400001\",\n    \"country\": \"India\"\n  },\n  \"receiverAddress\": {\n    \"fullName\": \"Jane Smith\",\n    \"phone\": \"9123456780\",\n    \"street\": \"456 Park Ave\",\n    \"city\": \"Delhi\",\n    \"state\": \"Delhi\",\n    \"zipCode\": \"110001\",\n    \"country\": \"India\"\n  },\n  \"packageDetails\": {\n    \"weight\": 2.5,\n    \"length\": 30,\n    \"width\": 20,\n    \"height\": 15,\n    \"description\": \"Electronics - Laptop\",\n    \"serviceType\": \"EXPRESS\",\n    \"declaredValue\": 75000,\n    \"fragile\": true\n  },\n  \"scheduledPickup\": \"2026-05-12T10:00:00\",\n  \"specialInstructions\": \"Handle with care\"\n}" },
+						"url": { "raw": "{{baseUrl}}/gateway/deliveries", "host": ["{{baseUrl}}"], "path": ["gateway", "deliveries"] }
+					}
+				},
+				{
+					"name": "POST Init Draft (Wizard Step 1)",
+					"event": [{ "listen": "test", "script": { "exec": ["var json = pm.response.json();", "if(json.id) pm.collectionVariables.set('deliveryId', json.id);"] } }],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/gateway/deliveries/draft", "host": ["{{baseUrl}}"], "path": ["gateway", "deliveries", "draft"] }
+					}
+				},
+				{
+					"name": "PUT Update Sender (Wizard Step 2)",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"fullName\": \"John Doe\",\n  \"phone\": \"9876543210\",\n  \"street\": \"123 Main St\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"zipCode\": \"400001\",\n  \"country\": \"India\"\n}" },
+						"url": { "raw": "{{baseUrl}}/gateway/deliveries/{{deliveryId}}/sender", "host": ["{{baseUrl}}"], "path": ["gateway", "deliveries", "{{deliveryId}}", "sender"] }
+					}
+				},
+				{
+					"name": "PUT Update Receiver (Wizard Step 3)",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"fullName\": \"Jane Smith\",\n  \"phone\": \"9123456780\",\n  \"street\": \"456 Park Ave\",\n  \"city\": \"Delhi\",\n  \"state\": \"Delhi\",\n  \"zipCode\": \"110001\",\n  \"country\": \"India\"\n}" },
+						"url": { "raw": "{{baseUrl}}/gateway/deliveries/{{deliveryId}}/receiver", "host": ["{{baseUrl}}"], "path": ["gateway", "deliveries", "{{deliveryId}}", "receiver"] }
+					}
+				},
+				{
+					"name": "PUT Update Package (Wizard Step 4)",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"weight\": 2.5,\n  \"length\": 30,\n  \"width\": 20,\n  \"height\": 15,\n  \"description\": \"Electronics\",\n  \"serviceType\": \"EXPRESS\",\n  \"declaredValue\": 75000,\n  \"fragile\": true\n}" },
+						"url": { "raw": "{{baseUrl}}/gateway/deliveries/{{deliveryId}}/package", "host": ["{{baseUrl}}"], "path": ["gateway", "deliveries", "{{deliveryId}}", "package"] }
+					}
+				},
+				{
+					"name": "POST Finalize Delivery (Wizard Step 5)",
+					"event": [{ "listen": "test", "script": { "exec": ["var json = pm.response.json();", "if(json.trackingNumber) pm.collectionVariables.set('trackingNumber', json.trackingNumber);"] } }],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/gateway/deliveries/{{deliveryId}}/finalize", "host": ["{{baseUrl}}"], "path": ["gateway", "deliveries", "{{deliveryId}}", "finalize"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "05 - Delivery Details",
+			"item": [
+				{
+					"name": "GET Delivery By ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/gateway/deliveries/{{deliveryId}}", "host": ["{{baseUrl}}"], "path": ["gateway", "deliveries", "{{deliveryId}}"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "06 - Upload Documents",
+			"item": [
+				{
+					"name": "POST Upload Document",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": { "mode": "formdata", "formdata": [{ "key": "deliveryId", "value": "{{deliveryId}}", "type": "text" }, { "key": "file", "type": "file", "src": "" }] },
+						"url": { "raw": "{{baseUrl}}/gateway/tracking/documents/upload", "host": ["{{baseUrl}}"], "path": ["gateway", "tracking", "documents", "upload"] }
+					}
+				},
+				{
+					"name": "GET Documents By DeliveryId",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/gateway/tracking/documents/{{deliveryId}}", "host": ["{{baseUrl}}"], "path": ["gateway", "tracking", "documents", "{{deliveryId}}"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "07 - Track Delivery",
+			"item": [
+				{
+					"name": "GET Tracking By TrackingNumber",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/gateway/tracking/{{trackingNumber}}", "host": ["{{baseUrl}}"], "path": ["gateway", "tracking", "{{trackingNumber}}"] }
+					}
+				},
+				{
+					"name": "POST Add Tracking Event",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"deliveryId\": 1,\n  \"trackingNumber\": \"{{trackingNumber}}\",\n  \"status\": \"IN_TRANSIT\",\n  \"location\": \"Mumbai Hub\",\n  \"description\": \"Package arrived at sorting facility\"\n}" },
+						"url": { "raw": "{{baseUrl}}/gateway/tracking/events", "host": ["{{baseUrl}}"], "path": ["gateway", "tracking", "events"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "08 - Delivery Confirmation (Proof)",
+			"item": [
+				{
+					"name": "GET Delivery Proof",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/gateway/tracking/{{deliveryId}}/proof", "host": ["{{baseUrl}}"], "path": ["gateway", "tracking", "{{deliveryId}}", "proof"] }
+					}
+				},
+				{
+					"name": "POST Add Delivery Proof",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/gateway/tracking/{{deliveryId}}/proof?recipientName=Jane%20Smith&notes=Delivered%20to%20reception", "host": ["{{baseUrl}}"], "path": ["gateway", "tracking", "{{deliveryId}}", "proof"], "query": [{ "key": "recipientName", "value": "Jane Smith" }, { "key": "signatureUrl", "value": "" }, { "key": "photoUrl", "value": "" }, { "key": "notes", "value": "Delivered to reception" }] }
+					}
+				}
+			]
+		},
+		{
+			"name": "09 - Delivery Status Updates",
+			"item": [
+				{
+					"name": "POST Book Delivery",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/gateway/deliveries/{{deliveryId}}/book", "host": ["{{baseUrl}}"], "path": ["gateway", "deliveries", "{{deliveryId}}", "book"] }
+					}
+				},
+				{
+					"name": "POST Pickup Delivery",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/gateway/deliveries/{{deliveryId}}/pickup", "host": ["{{baseUrl}}"], "path": ["gateway", "deliveries", "{{deliveryId}}", "pickup"] }
+					}
+				},
+				{
+					"name": "POST Transit Delivery",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/gateway/deliveries/{{deliveryId}}/transit", "host": ["{{baseUrl}}"], "path": ["gateway", "deliveries", "{{deliveryId}}", "transit"] }
+					}
+				},
+				{
+					"name": "POST Out For Delivery",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/gateway/deliveries/{{deliveryId}}/out-for-delivery", "host": ["{{baseUrl}}"], "path": ["gateway", "deliveries", "{{deliveryId}}", "out-for-delivery"] }
+					}
+				},
+				{
+					"name": "POST Deliver",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/gateway/deliveries/{{deliveryId}}/deliver", "host": ["{{baseUrl}}"], "path": ["gateway", "deliveries", "{{deliveryId}}", "deliver"] }
+					}
+				},
+				{
+					"name": "PUT Update Status (Generic)",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/gateway/deliveries/{{deliveryId}}/status?status=IN_TRANSIT&reason=In transit to hub", "host": ["{{baseUrl}}"], "path": ["gateway", "deliveries", "{{deliveryId}}", "status"], "query": [{ "key": "status", "value": "IN_TRANSIT" }, { "key": "reason", "value": "In transit to hub" }] }
+					}
+				}
+			]
+		},
+		{
+			"name": "10 - Admin Dashboard",
+			"item": [
+				{
+					"name": "GET Admin Dashboard",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+						"url": { "raw": "{{baseUrl}}/gateway/admin/dashboard", "host": ["{{baseUrl}}"], "path": ["gateway", "admin", "dashboard"] },
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+					}
+				}
+			]
+		},
+		{
+			"name": "11 - Delivery Monitoring (Admin)",
+			"item": [
+				{
+					"name": "GET All Deliveries (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/gateway/admin/deliveries", "host": ["{{baseUrl}}"], "path": ["gateway", "admin", "deliveries"] },
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+					}
+				},
+				{
+					"name": "GET Delivery By ID (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/gateway/admin/deliveries/{{deliveryId}}", "host": ["{{baseUrl}}"], "path": ["gateway", "admin", "deliveries", "{{deliveryId}}"] },
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+					}
+				}
+			]
+		},
+		{
+			"name": "12 - Exception Handling (Admin)",
+			"item": [
+				{
+					"name": "PUT Resolve Exception",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/gateway/admin/deliveries/{{deliveryId}}/resolve?resolution=Issue resolved - package rerouted", "host": ["{{baseUrl}}"], "path": ["gateway", "admin", "deliveries", "{{deliveryId}}", "resolve"], "query": [{ "key": "resolution", "value": "Issue resolved - package rerouted" }] },
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+					}
+				}
+			]
+		},
+		{
+			"name": "13 - Reports (Admin)",
+			"item": [
+				{
+					"name": "GET All Reports",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/gateway/admin/reports", "host": ["{{baseUrl}}"], "path": ["gateway", "admin", "reports"] },
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+					}
+				},
+				{
+					"name": "POST Generate Report",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/gateway/admin/reports?type=DELIVERY_SUMMARY&title=May 2026 Report", "host": ["{{baseUrl}}"], "path": ["gateway", "admin", "reports"], "query": [{ "key": "type", "value": "DELIVERY_SUMMARY" }, { "key": "title", "value": "May 2026 Report" }] },
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+					}
+				}
+			]
+		},
+		{
+			"name": "14 - User Management (Admin)",
+			"item": [
+				{
+					"name": "GET All Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/gateway/admin/users", "host": ["{{baseUrl}}"], "path": ["gateway", "admin", "users"] },
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+					}
+				},
+				{
+					"name": "POST Create User",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"username\": \"newagent\",\n  \"email\": \"agent@smartcourier.com\",\n  \"password\": \"agent123\",\n  \"fullName\": \"Delivery Agent\",\n  \"phone\": \"9000000001\",\n  \"role\": \"AGENT\"\n}" },
+						"url": { "raw": "{{baseUrl}}/gateway/admin/users", "host": ["{{baseUrl}}"], "path": ["gateway", "admin", "users"] },
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+					}
+				},
+				{
+					"name": "PUT Update User",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"email\": \"updated@smartcourier.com\",\n  \"fullName\": \"Updated Name\",\n  \"phone\": \"9000000002\",\n  \"role\": \"CUSTOMER\"\n}" },
+						"url": { "raw": "{{baseUrl}}/gateway/admin/users/1", "host": ["{{baseUrl}}"], "path": ["gateway", "admin", "users", "1"] },
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+					}
+				},
+				{
+					"name": "DELETE User",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/gateway/admin/users/1", "host": ["{{baseUrl}}"], "path": ["gateway", "admin", "users", "1"] },
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+					}
+				}
+			]
+		},
+		{
+			"name": "15 - Hub Management (Admin)",
+			"item": [
+				{
+					"name": "GET All Hubs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/gateway/admin/hubs", "host": ["{{baseUrl}}"], "path": ["gateway", "admin", "hubs"] },
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+					}
+				},
+				{
+					"name": "GET Hub By ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/gateway/admin/hubs/1", "host": ["{{baseUrl}}"], "path": ["gateway", "admin", "hubs", "1"] },
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+					}
+				},
+				{
+					"name": "POST Create Hub",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Mumbai Central Hub\",\n  \"code\": \"MUM-001\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"address\": \"Plot 42, MIDC, Andheri East\",\n  \"active\": true,\n  \"contactPhone\": \"022-12345678\",\n  \"contactEmail\": \"mumbai@smartcourier.com\"\n}" },
+						"url": { "raw": "{{baseUrl}}/gateway/admin/hubs", "host": ["{{baseUrl}}"], "path": ["gateway", "admin", "hubs"] },
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+					}
+				},
+				{
+					"name": "PUT Update Hub",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Mumbai Central Hub Updated\",\n  \"code\": \"MUM-001\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"address\": \"New Address, BKC\",\n  \"active\": true,\n  \"contactPhone\": \"022-87654321\",\n  \"contactEmail\": \"mumbai-updated@smartcourier.com\"\n}" },
+						"url": { "raw": "{{baseUrl}}/gateway/admin/hubs/1", "host": ["{{baseUrl}}"], "path": ["gateway", "admin", "hubs", "1"] },
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+					}
+				},
+				{
+					"name": "DELETE Hub",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/gateway/admin/hubs/1", "host": ["{{baseUrl}}"], "path": ["gateway", "admin", "hubs", "1"] },
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] }
+					}
+				}
+			]
+		}
+	]
+}

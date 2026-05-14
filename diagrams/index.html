@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartCourier - System Design Documentation</title>
+<meta name="description" content="HLD, LLD, Database, Architecture & Use Case Diagrams for SmartCourier Delivery Management System">
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true,theme:'dark',themeVariables:{primaryColor:'#6366f1',primaryTextColor:'#e2e8f0',primaryBorderColor:'#4f46e5',lineColor:'#6366f1',secondaryColor:'#1e293b',tertiaryColor:'#1a2236',background:'#1a2236',mainBkg:'#1a2236',nodeBorder:'#4f46e5',clusterBkg:'#111827',clusterBorder:'#2a3554',titleColor:'#e2e8f0',edgeLabelBackground:'#1a2236',fontSize:'14px'}});</script>
+</head>
+<body>
+
+<div class="hero">
+<h1>SmartCourier System Design</h1>
+<p>Comprehensive HLD, LLD, Database Schema, Architecture & Use Case Documentation</p>
+<div class="badge-row">
+<span class="badge">Spring Boot 3</span><span class="badge">Angular 17</span><span class="badge">MySQL 8</span>
+<span class="badge">Spring Cloud Gateway</span><span class="badge">RabbitMQ</span><span class="badge">Eureka</span><span class="badge">Zipkin</span>
+</div>
+</div>
+
+<nav class="nav" id="topnav">
+<a href="#hld">HLD</a><a href="#architecture">Architecture</a><a href="#lld">LLD</a>
+<a href="#database">Database</a><a href="#usecase">Use Cases</a><a href="#flow">Flows</a><a href="#tech">Tech Stack</a>
+</nav>
+
+<!-- ========== HLD ========== -->
+<div class="section-divider"></div>
+<section class="section" id="hld">
+<div class="section-header"><h2>High-Level Design (HLD)</h2><p>Bird's eye view of the SmartCourier microservices ecosystem</p></div>
+<div class="diagram-card">
+<h3><span class="icon" style="background:rgba(99,102,241,.2)">🏗️</span> System Overview</h3>
+<div class="mermaid">
+graph TB
+  subgraph Clients["🖥️ Client Layer"]
+    WEB["Angular Frontend<br/>Port 4200"]
+    MOBILE["Mobile App<br/>iOS / Android"]
+  end
+  subgraph Gateway["🔒 API Gateway Layer"]
+    GW["Spring Cloud Gateway<br/>Port 9090<br/>JWT · CORS · Routing"]
+  end
+  subgraph Services["⚙️ Microservices Layer"]
+    AUTH["Auth Service<br/>Port 8081"]
+    DEL["Delivery Service<br/>Port 8082"]
+    TRACK["Tracking Service<br/>Port 8083"]
+    ADMIN["Admin Service<br/>Port 8084"]
+  end
+  subgraph Infra["🏢 Infrastructure Layer"]
+    EUREKA["Eureka Registry<br/>Port 8761"]
+    CONFIG["Config Server<br/>Port 8889"]
+    RABBIT["RabbitMQ<br/>Port 5672"]
+    ZIPKIN["Zipkin Tracing<br/>Port 9411"]
+  end
+  subgraph Data["💾 Data Layer"]
+    MYSQL[("MySQL 8.0<br/>auth_db · delivery_db<br/>tracking_db · admin_db")]
+  end
+  WEB & MOBILE -->|HTTPS| GW
+  GW -->|/gateway/auth| AUTH
+  GW -->|/gateway/deliveries| DEL
+  GW -->|/gateway/tracking| TRACK
+  GW -->|/gateway/admin| ADMIN
+  AUTH & DEL & TRACK & ADMIN -->|Register/Heartbeat| EUREKA
+  AUTH & DEL & TRACK & ADMIN -->|Pull Config| CONFIG
+  AUTH & DEL & TRACK & ADMIN -->|Spans| ZIPKIN
+  DEL -->|Publish Events| RABBIT
+  RABBIT -->|Consume Events| TRACK
+  AUTH & DEL & TRACK & ADMIN --> MYSQL
+</div></div>
+
+<div class="grid-2">
+<div class="info-card"><h4>🎯 Design Principles</h4><ul>
+<li>Microservices with single responsibility</li><li>API Gateway as single entry point</li>
+<li>Async messaging via RabbitMQ</li><li>JWT-based stateless authentication</li>
+<li>Service discovery with Eureka</li><li>Centralized config management</li>
+<li>Distributed tracing with Zipkin</li><li>Database per service pattern</li></ul></div>
+<div class="info-card"><h4>📊 Service Ports & Databases</h4><ul>
+<li>Auth Service → :8081 → auth_db</li><li>Delivery Service → :8082 → delivery_db</li>
+<li>Tracking Service → :8083 → tracking_db</li><li>Admin Service → :8084 → admin_db</li>
+<li>API Gateway → :9090 (no DB)</li><li>Config Server → :8889</li>
+<li>Eureka → :8761</li><li>MySQL → :3306 (Docker: 3307)</li></ul></div>
+</div>
+</section>
+
+<!-- ========== ARCHITECTURE ========== -->
+<div class="section-divider"></div>
+<section class="section" id="architecture">
+<div class="section-header"><h2>Architecture Diagram</h2><p>Component interactions, communication patterns & data flow</p></div>
+<div class="diagram-card">
+<h3><span class="icon" style="background:rgba(6,182,212,.2)">🔀</span> Service Communication Architecture</h3>
+<div class="mermaid">
+graph LR
+  subgraph FE["Frontend (Angular)"]
+    UI["Angular SPA<br/>Components · Guards · Interceptors"]
+  end
+  subgraph GW["API Gateway :9090"]
+    FILTER["JwtAuthFilter"]
+    ROUTER["RouteLocator"]
+    CORS["CorsConfig"]
+    FILTER --> ROUTER
+  end
+  subgraph MS["Microservices"]
+    A["Auth<br/>:8081"]
+    D["Delivery<br/>:8082"]
+    T["Tracking<br/>:8083"]
+    AD["Admin<br/>:8084"]
+  end
+  subgraph MQ["Message Broker"]
+    RMQ["RabbitMQ<br/>Exchange: delivery.status"]
+  end
+  subgraph DB["Databases"]
+    DB1[("auth_db")]
+    DB2[("delivery_db")]
+    DB3[("tracking_db")]
+    DB4[("admin_db")]
+  end
+  UI -->|HTTP + JWT| GW
+  ROUTER -->|/auth/**| A
+  ROUTER -->|/deliveries/**| D
+  ROUTER -->|/tracking/**| T
+  ROUTER -->|/admin/**| AD
+  D -->|Publish DeliveryEvent| RMQ
+  RMQ -->|Consume → TrackingEvent| T
+  AD -->|REST Feign| D & T & A
+  A --> DB1
+  D --> DB2
+  T --> DB3
+  AD --> DB4
+</div></div>
+
+<div class="diagram-card">
+<h3><span class="icon" style="background:rgba(139,92,246,.2)">🔐</span> Authentication Flow</h3>
+<div class="mermaid">
+sequenceDiagram
+  participant C as Client
+  participant GW as API Gateway
+  participant AS as Auth Service
+  participant DB as auth_db
+  C->>GW: POST /gateway/auth/login {username, password}
+  GW->>AS: Forward (public route)
+  AS->>DB: SELECT * FROM users WHERE username=?
+  DB-->>AS: User record
+  AS->>AS: Verify BCrypt password
+  AS->>AS: Generate JWT(username, role, exp)
+  AS-->>GW: {token: "eyJ..."}
+  GW-->>C: 200 OK + JWT Token
+  Note over C: Store JWT in localStorage
+  C->>GW: GET /gateway/deliveries/my<br/>Authorization: Bearer eyJ...
+  GW->>GW: JwtAuthFilter: validate signature & expiry
+  GW->>GW: Extract username + role → add X-User headers
+  GW->>AS: Forward + X-User-Username + X-User-Role
+  AS-->>GW: Response data
+  GW-->>C: 200 OK + JSON
+</div></div>
+</section>
+
+<!-- ========== LLD ========== -->
+<div class="section-divider"></div>
+<section class="section" id="lld">
+<div class="section-header"><h2>Low-Level Design (LLD)</h2><p>Internal structure of each microservice — controllers, services, repositories & entities</p></div>
+
+<div class="diagram-card">
+<h3><span class="icon" style="background:rgba(99,102,241,.2)">🔑</span> Auth Service — Class Diagram</h3>
+<div class="mermaid">
+classDiagram
+  class AuthController {
+    +register(SignupRequest) ResponseEntity
+    +login(LoginRequest) ResponseEntity
+    +validate(token) ResponseEntity
+  }
+  class AuthService {
+    -userRepository: UserRepository
+    -passwordEncoder: BCryptPasswordEncoder
+    -jwtUtil: JwtUtil
+    +register(SignupRequest) AuthResponse
+    +login(LoginRequest) AuthResponse
+    +validateToken(String) boolean
+  }
+  class JwtUtil {
+    -SECRET_KEY: String
+    +generateToken(username, role) String
+    +validateToken(token) boolean
+    +extractUsername(token) String
+    +extractRole(token) String
+  }
+  class User {
+    -id: Long
+    -username: String
+    -email: String
+    -password: String
+    -fullName: String
+    -phone: String
+    -role: Role
+    -createdAt: LocalDateTime
+    -updatedAt: LocalDateTime
+  }
+  class Role {
+    &lt;&lt;enum&gt;&gt;
+    CUSTOMER
+    ADMIN
+  }
+  class UserRepository {
+    +findByUsername(String) Optional~User~
+    +existsByUsername(String) boolean
+    +existsByEmail(String) boolean
+  }
+  AuthController --> AuthService
+  AuthService --> UserRepository
+  AuthService --> JwtUtil
+  UserRepository --> User
+  User --> Role
+</div></div>
+
+<div class="diagram-card">
+<h3><span class="icon" style="background:rgba(16,185,129,.2)">📦</span> Delivery Service — Class Diagram</h3>
+<div class="mermaid">
+classDiagram
+  class DeliveryController {
+    +createDraft(username) ResponseEntity
+    +updateSender(id, AddressDTO) ResponseEntity
+    +updateReceiver(id, AddressDTO) ResponseEntity
+    +updatePackage(id, PackageDTO) ResponseEntity
+    +finalizeDelivery(id) ResponseEntity
+    +getMyDeliveries(username) ResponseEntity
+    +updateStatus(id, status) ResponseEntity
+  }
+  class DeliveryService {
+    -deliveryRepository: DeliveryRepository
+    -rabbitTemplate: RabbitTemplate
+    +createDraft(username) DeliveryResponse
+    +updateSenderAddress(id, AddressDTO) DeliveryResponse
+    +updateReceiverAddress(id, AddressDTO) DeliveryResponse
+    +updatePackageDetails(id, PackageDTO) DeliveryResponse
+    +finalizeDelivery(id) DeliveryResponse
+    +updateStatus(id, status) DeliveryResponse
+    -publishStatusEvent(delivery) void
+    -calculateCharge(pkg) Double
+  }
+  class Delivery {
+    -id: Long
+    -trackingNumber: String
+    -username: String
+    -senderAddress: Address
+    -receiverAddress: Address
+    -parcelPackage: ParcelPackage
+    -status: DeliveryStatus
+    -charge: Double
+    -paid: boolean
+    -specialInstructions: String
+    -scheduledPickup: LocalDateTime
+    -createdAt: LocalDateTime
+  }
+  class Address {
+    -id: Long
+    -fullName: String
+    -phone: String
+    -street: String
+    -city: String
+    -state: String
+    -zipCode: String
+    -country: String
+  }
+  class ParcelPackage {
+    -id: Long
+    -weight: Double
+    -length: Double
+    -width: Double
+    -height: Double
+    -description: String
+    -serviceType: ServiceType
+    -declaredValue: Double
+    -fragile: Boolean
+  }
+  class DeliveryStatus {
+    &lt;&lt;enum&gt;&gt;
+    DRAFT
+    BOOKED
+    PICKED_UP
+    IN_TRANSIT
+    OUT_FOR_DELIVERY
+    DELIVERED
+    DELAYED
+    FAILED
+    RETURNED
+  }
+  class ServiceType {
+    &lt;&lt;enum&gt;&gt;
+    DOMESTIC
+    EXPRESS
+    INTERNATIONAL
+  }
+  DeliveryController --> DeliveryService
+  DeliveryService --> DeliveryRepository
+  Delivery --> Address : sender
+  Delivery --> Address : receiver
+  Delivery --> ParcelPackage
+  Delivery --> DeliveryStatus
+  ParcelPackage --> ServiceType
+</div></div>
+
+<div class="diagram-card">
+<h3><span class="icon" style="background:rgba(6,182,212,.2)">📍</span> Tracking Service — Class Diagram</h3>
+<div class="mermaid">
+classDiagram
+  class TrackingController {
+    +getHistory(trackingNumber) ResponseEntity
+    +getProof(deliveryId) ResponseEntity
+    +uploadDocument(deliveryId, file) ResponseEntity
+  }
+  class TrackingService {
+    -trackingEventRepo: TrackingEventRepository
+    -deliveryProofRepo: DeliveryProofRepository
+    -documentRepo: DocumentRepository
+    +getTrackingHistory(trackingNumber) List
+    +createTrackingEvent(event) TrackingEvent
+    +submitProof(deliveryId, proof) DeliveryProof
+    +uploadDocument(deliveryId, file) Document
+  }
+  class DeliveryEventConsumer {
+    -trackingService: TrackingService
+    +handleDeliveryEvent(DeliveryEvent) void
+  }
+  class TrackingEvent {
+    -id: Long
+    -deliveryId: Long
+    -trackingNumber: String
+    -status: String
+    -location: String
+    -description: String
+    -timestamp: LocalDateTime
+  }
+  class DeliveryProof {
+    -id: Long
+    -deliveryId: Long
+    -recipientName: String
+    -signatureUrl: String
+    -photoUrl: String
+    -notes: String
+    -deliveredAt: LocalDateTime
+  }
+  class Document {
+    -id: Long
+    -deliveryId: Long
+    -fileName: String
+    -fileType: String
+    -filePath: String
+    -fileSize: Long
+    -uploadedAt: LocalDateTime
+  }
+  TrackingController --> TrackingService
+  DeliveryEventConsumer --> TrackingService
+  TrackingService --> TrackingEvent
+  TrackingService --> DeliveryProof
+  TrackingService --> Document
+</div></div>
+</section>
+
+<!-- ========== DATABASE ========== -->
+<div class="section-divider"></div>
+<section class="section" id="database">
+<div class="section-header"><h2>Database Schema (ER Diagram)</h2><p>Entity relationships across all 4 isolated databases</p></div>
+
+<div class="diagram-card">
+<h3><span class="icon" style="background:rgba(245,158,11,.2)">🗄️</span> Complete ER Diagram</h3>
+<div class="mermaid">
+erDiagram
+  USERS {
+    Long id PK
+    String username UK
+    String email UK
+    String password
+    String fullName
+    String phone
+    String role "CUSTOMER | ADMIN"
+    DateTime createdAt
+    DateTime updatedAt
+  }
+  DELIVERIES {
+    Long id PK
+    String trackingNumber UK
+    String username
+    Long sender_address_id FK
+    Long receiver_address_id FK
+    Long package_id FK
+    String status "enum DeliveryStatus"
+    Double charge
+    Boolean paid
+    String specialInstructions
+    DateTime scheduledPickup
+    DateTime createdAt
+    DateTime updatedAt
+  }
+  ADDRESSES {
+    Long id PK
+    String fullName
+    String phone
+    String street
+    String city
+    String state
+    String zipCode
+    String country
+  }
+  PACKAGES {
+    Long id PK
+    Double weight
+    Double length
+    Double width
+    Double height
+    String description
+    String serviceType "DOMESTIC | EXPRESS | INTL"
+    Double declaredValue
+    Boolean fragile
+  }
+  TRACKING_EVENTS {
+    Long id PK
+    Long deliveryId
+    String trackingNumber
+    String status
+    String location
+    String description
+    DateTime timestamp
+  }
+  DELIVERY_PROOFS {
+    Long id PK
+    Long deliveryId UK
+    String recipientName
+    String signatureUrl
+    String photoUrl
+    String notes
+    DateTime deliveredAt
+  }
+  DOCUMENTS {
+    Long id PK
+    Long deliveryId
+    String fileName
+    String fileType
+    String filePath
+    Long fileSize
+    DateTime uploadedAt
+  }
+  HUBS {
+    Long id PK
+    String name UK
+    String code UK
+    String city
+    String state
+    String address
+    Boolean active
+    String contactPhone
+    String contactEmail
+    DateTime createdAt
+    DateTime updatedAt
+  }
+  REPORTS {
+    Long id PK
+    String type
+    String title
+    Text data
+    String generatedBy
+    DateTime generatedAt
+  }
+  DELIVERIES ||--o| ADDRESSES : "sender"
+  DELIVERIES ||--o| ADDRESSES : "receiver"
+  DELIVERIES ||--o| PACKAGES : "contains"
+  DELIVERIES ||--o{ TRACKING_EVENTS : "has events"
+  DELIVERIES ||--o| DELIVERY_PROOFS : "proof"
+  DELIVERIES ||--o{ DOCUMENTS : "attachments"
+</div></div>
+
+<h3 style="text-align:center;margin-bottom:1.5rem;color:var(--text2)">Individual Database Schemas</h3>
+<div class="db-grid">
+<!-- auth_db -->
+<div class="db-table"><div class="db-table-header bg-indigo">🔑 auth_db → users</div><div class="db-table-body">
+<div class="db-field"><span class="name pk">id</span><span class="type">BIGINT PK AUTO_INC</span></div>
+<div class="db-field"><span class="name uq">username</span><span class="type">VARCHAR UNIQUE NN</span></div>
+<div class="db-field"><span class="name uq">email</span><span class="type">VARCHAR UNIQUE NN</span></div>
+<div class="db-field"><span class="name">password</span><span class="type">VARCHAR NN (BCrypt)</span></div>
+<div class="db-field"><span class="name">fullName</span><span class="type">VARCHAR NN</span></div>
+<div class="db-field"><span class="name">phone</span><span class="type">VARCHAR</span></div>
+<div class="db-field"><span class="name">role</span><span class="type">ENUM (CUSTOMER, ADMIN)</span></div>
+<div class="db-field"><span class="name">createdAt</span><span class="type">DATETIME NN</span></div>
+<div class="db-field"><span class="name">updatedAt</span><span class="type">DATETIME</span></div>
+</div></div>
+
+<!-- delivery_db tables -->
+<div class="db-table"><div class="db-table-header bg-emerald">📦 delivery_db → deliveries</div><div class="db-table-body">
+<div class="db-field"><span class="name pk">id</span><span class="type">BIGINT PK</span></div>
+<div class="db-field"><span class="name uq">trackingNumber</span><span class="type">VARCHAR UNIQUE NN</span></div>
+<div class="db-field"><span class="name">username</span><span class="type">VARCHAR NN</span></div>
+<div class="db-field"><span class="name fk">sender_address_id</span><span class="type">BIGINT FK → addresses</span></div>
+<div class="db-field"><span class="name fk">receiver_address_id</span><span class="type">BIGINT FK → addresses</span></div>
+<div class="db-field"><span class="name fk">package_id</span><span class="type">BIGINT FK → packages</span></div>
+<div class="db-field"><span class="name">status</span><span class="type">ENUM DeliveryStatus</span></div>
+<div class="db-field"><span class="name">charge</span><span class="type">DOUBLE</span></div>
+<div class="db-field"><span class="name">paid</span><span class="type">BOOLEAN default false</span></div>
+<div class="db-field"><span class="name">specialInstructions</span><span class="type">VARCHAR</span></div>
+<div class="db-field"><span class="name">createdAt / updatedAt</span><span class="type">DATETIME</span></div>
+</div></div>
+
+<div class="db-table"><div class="db-table-header bg-emerald">📍 delivery_db → addresses</div><div class="db-table-body">
+<div class="db-field"><span class="name pk">id</span><span class="type">BIGINT PK</span></div>
+<div class="db-field"><span class="name">fullName</span><span class="type">VARCHAR NN</span></div>
+<div class="db-field"><span class="name">phone</span><span class="type">VARCHAR NN</span></div>
+<div class="db-field"><span class="name">street / city / state</span><span class="type">VARCHAR NN</span></div>
+<div class="db-field"><span class="name">zipCode / country</span><span class="type">VARCHAR NN</span></div>
+</div></div>
+
+<div class="db-table"><div class="db-table-header bg-emerald">📋 delivery_db → packages</div><div class="db-table-body">
+<div class="db-field"><span class="name pk">id</span><span class="type">BIGINT PK</span></div>
+<div class="db-field"><span class="name">weight</span><span class="type">DOUBLE NN</span></div>
+<div class="db-field"><span class="name">length / width / height</span><span class="type">DOUBLE</span></div>
+<div class="db-field"><span class="name">description</span><span class="type">VARCHAR NN</span></div>
+<div class="db-field"><span class="name">serviceType</span><span class="type">ENUM (DOMESTIC, EXPRESS, INTL)</span></div>
+<div class="db-field"><span class="name">declaredValue</span><span class="type">DOUBLE</span></div>
+<div class="db-field"><span class="name">fragile</span><span class="type">BOOLEAN</span></div>
+</div></div>
+
+<!-- tracking_db -->
+<div class="db-table"><div class="db-table-header bg-cyan">📍 tracking_db → tracking_events</div><div class="db-table-body">
+<div class="db-field"><span class="name pk">id</span><span class="type">BIGINT PK</span></div>
+<div class="db-field"><span class="name">deliveryId</span><span class="type">BIGINT NN</span></div>
+<div class="db-field"><span class="name">trackingNumber</span><span class="type">VARCHAR NN</span></div>
+<div class="db-field"><span class="name">status</span><span class="type">VARCHAR NN</span></div>
+<div class="db-field"><span class="name">location</span><span class="type">VARCHAR</span></div>
+<div class="db-field"><span class="name">description</span><span class="type">VARCHAR</span></div>
+<div class="db-field"><span class="name">timestamp</span><span class="type">DATETIME NN</span></div>
+</div></div>
+
+<div class="db-table"><div class="db-table-header bg-cyan">✅ tracking_db → delivery_proofs</div><div class="db-table-body">
+<div class="db-field"><span class="name pk">id</span><span class="type">BIGINT PK</span></div>
+<div class="db-field"><span class="name uq">deliveryId</span><span class="type">BIGINT UNIQUE NN</span></div>
+<div class="db-field"><span class="name">recipientName</span><span class="type">VARCHAR NN</span></div>
+<div class="db-field"><span class="name">signatureUrl / photoUrl</span><span class="type">VARCHAR</span></div>
+<div class="db-field"><span class="name">notes</span><span class="type">VARCHAR</span></div>
+<div class="db-field"><span class="name">deliveredAt</span><span class="type">DATETIME NN</span></div>
+</div></div>
+
+<div class="db-table"><div class="db-table-header bg-cyan">📄 tracking_db → documents</div><div class="db-table-body">
+<div class="db-field"><span class="name pk">id</span><span class="type">BIGINT PK</span></div>
+<div class="db-field"><span class="name">deliveryId</span><span class="type">BIGINT NN</span></div>
+<div class="db-field"><span class="name">fileName / fileType</span><span class="type">VARCHAR NN</span></div>
+<div class="db-field"><span class="name">filePath</span><span class="type">VARCHAR NN</span></div>
+<div class="db-field"><span class="name">fileSize</span><span class="type">BIGINT</span></div>
+<div class="db-field"><span class="name">uploadedAt</span><span class="type">DATETIME NN</span></div>
+</div></div>
+
+<!-- admin_db -->
+<div class="db-table"><div class="db-table-header bg-amber">🏢 admin_db → hubs</div><div class="db-table-body">
+<div class="db-field"><span class="name pk">id</span><span class="type">BIGINT PK</span></div>
+<div class="db-field"><span class="name uq">name / code</span><span class="type">VARCHAR UNIQUE NN</span></div>
+<div class="db-field"><span class="name">city / state</span><span class="type">VARCHAR NN</span></div>
+<div class="db-field"><span class="name">address</span><span class="type">VARCHAR</span></div>
+<div class="db-field"><span class="name">active</span><span class="type">BOOLEAN NN</span></div>
+<div class="db-field"><span class="name">contactPhone / contactEmail</span><span class="type">VARCHAR</span></div>
+<div class="db-field"><span class="name">createdAt / updatedAt</span><span class="type">DATETIME</span></div>
+</div></div>
+
+<div class="db-table"><div class="db-table-header bg-amber">📊 admin_db → reports</div><div class="db-table-body">
+<div class="db-field"><span class="name pk">id</span><span class="type">BIGINT PK</span></div>
+<div class="db-field"><span class="name">type</span><span class="type">VARCHAR NN</span></div>
+<div class="db-field"><span class="name">title</span><span class="type">VARCHAR NN</span></div>
+<div class="db-field"><span class="name">data</span><span class="type">TEXT (JSON)</span></div>
+<div class="db-field"><span class="name">generatedBy</span><span class="type">VARCHAR</span></div>
+<div class="db-field"><span class="name">generatedAt</span><span class="type">DATETIME NN</span></div>
+</div></div>
+</div>
+</section>
+
+<!-- ========== USE CASES ========== -->
+<div class="section-divider"></div>
+<section class="section" id="usecase">
+<div class="section-header"><h2>Use Case Diagrams</h2><p>Actor interactions across Customer, Admin and System roles</p></div>
+
+<div class="diagram-card">
+<h3><span class="icon" style="background:rgba(99,102,241,.2)">👤</span> Customer Use Cases</h3>
+<div class="mermaid">
+graph LR
+  CUST(("👤 Customer"))
+  CUST --> UC1["Register Account"]
+  CUST --> UC2["Login / Logout"]
+  CUST --> UC3["Create Delivery<br/>(Wizard: Sender→Receiver→Package→Review)"]
+  CUST --> UC4["View My Deliveries"]
+  CUST --> UC5["Track Delivery<br/>by Tracking Number"]
+  CUST --> UC6["View Delivery Details"]
+  CUST --> UC7["View Proof of Delivery"]
+  CUST --> UC8["View Dashboard Stats"]
+  UC3 -->|includes| UC3A["Set Sender Address"]
+  UC3 -->|includes| UC3B["Set Receiver Address"]
+  UC3 -->|includes| UC3C["Set Package Details"]
+  UC3 -->|includes| UC3D["Finalize & Book"]
+</div></div>
+
+<div class="diagram-card">
+<h3><span class="icon" style="background:rgba(245,158,11,.2)">🛡️</span> Admin Use Cases</h3>
+<div class="mermaid">
+graph LR
+  ADMIN(("🛡️ Admin"))
+  ADMIN --> A1["View Admin Dashboard"]
+  ADMIN --> A2["Monitor All Deliveries"]
+  ADMIN --> A3["Update Delivery Status"]
+  ADMIN --> A4["Manage Hubs<br/>(CRUD)"]
+  ADMIN --> A5["Manage Users"]
+  ADMIN --> A6["Generate Reports"]
+  ADMIN --> A7["Resolve Exceptions"]
+  ADMIN --> A8["View System Metrics"]
+  A3 -->|triggers| SYS1["Publish Status Event<br/>to RabbitMQ"]
+  SYS1 -->|async| SYS2["Create Tracking<br/>Event Record"]
+</div></div>
+
+<div class="diagram-card">
+<h3><span class="icon" style="background:rgba(16,185,129,.2)">⚙️</span> System Actor Use Cases</h3>
+<div class="mermaid">
+graph LR
+  SYS(("⚙️ System"))
+  SYS --> S1["Validate JWT Tokens<br/>(API Gateway)"]
+  SYS --> S2["Route Requests<br/>to Microservices"]
+  SYS --> S3["Register Services<br/>(Eureka)"]
+  SYS --> S4["Publish DeliveryEvents<br/>(RabbitMQ)"]
+  SYS --> S5["Consume & Persist<br/>Tracking Events"]
+  SYS --> S6["Calculate Delivery<br/>Charges"]
+  SYS --> S7["Generate Tracking<br/>Numbers"]
+  SYS --> S8["Distribute Config<br/>(Config Server)"]
+  SYS --> S9["Trace Requests<br/>(Zipkin)"]
+</div></div>
+</section>
+
+<!-- ========== FLOWS ========== -->
+<div class="section-divider"></div>
+<section class="section" id="flow">
+<div class="section-header"><h2>Key Workflows & Status Flow</h2><p>Delivery lifecycle and event-driven processing</p></div>
+
+<div class="diagram-card">
+<h3><span class="icon" style="background:rgba(6,182,212,.2)">🔄</span> Delivery Status State Machine</h3>
+<div class="mermaid">
+stateDiagram-v2
+  [*] --> DRAFT: Customer creates draft
+  DRAFT --> BOOKED: Finalize delivery
+  BOOKED --> PICKED_UP: Partner picks up
+  PICKED_UP --> IN_TRANSIT: En route
+  IN_TRANSIT --> OUT_FOR_DELIVERY: Near destination
+  OUT_FOR_DELIVERY --> DELIVERED: Successfully delivered
+  BOOKED --> DELAYED: Delay reported
+  IN_TRANSIT --> DELAYED: Delay reported
+  DELAYED --> IN_TRANSIT: Resumed
+  BOOKED --> FAILED: Failure
+  IN_TRANSIT --> FAILED: Failure
+  OUT_FOR_DELIVERY --> FAILED: Delivery failed
+  FAILED --> RETURNED: Return to sender
+  DELIVERED --> [*]
+  RETURNED --> [*]
+</div></div>
+
+<div class="diagram-card">
+<h3><span class="icon" style="background:rgba(139,92,246,.2)">📨</span> Async Event Flow (Delivery → Tracking)</h3>
+<div class="mermaid">
+sequenceDiagram
+  participant DS as Delivery Service
+  participant RMQ as RabbitMQ
+  participant TS as Tracking Service
+  participant DB as tracking_db
+  DS->>DS: updateStatus(id, PICKED_UP)
+  DS->>DS: Save to delivery_db
+  DS->>RMQ: publish(exchange="delivery.status")<br/>DeliveryEvent JSON
+  Note over RMQ: Exchange: delivery.status<br/>Queue: tracking-service-events
+  RMQ->>TS: @RabbitListener consume event
+  TS->>TS: Deserialize DeliveryEvent
+  TS->>TS: Build TrackingEvent entity
+  TS->>DB: Save TrackingEvent
+  TS->>RMQ: ACK (message removed)
+  Note over DS,TS: Fallback: If RabbitMQ down → sync REST call via Feign
+</div></div>
+
+<div class="diagram-card">
+<h3><span class="icon" style="background:rgba(245,158,11,.2)">📝</span> Delivery Creation Wizard Flow</h3>
+<div class="mermaid">
+sequenceDiagram
+  participant C as Customer
+  participant GW as Gateway :9090
+  participant DS as Delivery :8082
+  C->>GW: POST /gateway/deliveries/draft
+  GW->>GW: Validate JWT
+  GW->>DS: Create Draft (status=DRAFT)
+  DS-->>C: {id: 123, status: DRAFT}
+  C->>GW: PUT /gateway/deliveries/123/sender
+  GW->>DS: Update sender address
+  DS-->>C: Updated delivery
+  C->>GW: PUT /gateway/deliveries/123/receiver
+  GW->>DS: Update receiver address
+  DS-->>C: Updated delivery
+  C->>GW: PUT /gateway/deliveries/123/package
+  GW->>DS: Update package details
+  DS-->>C: Updated delivery
+  C->>GW: PUT /gateway/deliveries/123/finalize
+  GW->>DS: Validate all fields → BOOKED
+  DS->>DS: Calculate charge
+  DS->>DS: Publish event to RabbitMQ
+  DS-->>C: {id: 123, status: BOOKED, charge: 13.99}
+</div></div>
+</section>
+
+<!-- ========== TECH STACK ========== -->
+<div class="section-divider"></div>
+<section class="section" id="tech">
+<div class="section-header"><h2>Technology Stack</h2><p>Complete technology ecosystem powering SmartCourier</p></div>
+<div class="tech-grid">
+<div class="tech-item"><div class="emoji">☕</div><div class="name">Spring Boot 3</div><div class="desc">Microservice framework</div></div>
+<div class="tech-item"><div class="emoji">🅰️</div><div class="name">Angular 17</div><div class="desc">Frontend SPA</div></div>
+<div class="tech-item"><div class="emoji">🐬</div><div class="name">MySQL 8.0</div><div class="desc">Relational database</div></div>
+<div class="tech-item"><div class="emoji">🚪</div><div class="name">Spring Cloud Gateway</div><div class="desc">API Gateway</div></div>
+<div class="tech-item"><div class="emoji">🐰</div><div class="name">RabbitMQ</div><div class="desc">Message broker</div></div>
+<div class="tech-item"><div class="emoji">🔍</div><div class="name">Eureka</div><div class="desc">Service discovery</div></div>
+<div class="tech-item"><div class="emoji">📡</div><div class="name">Zipkin</div><div class="desc">Distributed tracing</div></div>
+<div class="tech-item"><div class="emoji">⚙️</div><div class="name">Config Server</div><div class="desc">Centralized config</div></div>
+<div class="tech-item"><div class="emoji">🔐</div><div class="name">JWT + BCrypt</div><div class="desc">Authentication</div></div>
+<div class="tech-item"><div class="emoji">🗃️</div><div class="name">Hibernate/JPA</div><div class="desc">ORM layer</div></div>
+<div class="tech-item"><div class="emoji">🐳</div><div class="name">Docker Compose</div><div class="desc">Containerization</div></div>
+<div class="tech-item"><div class="emoji">🧪</div><div class="name">JUnit + Mockito</div><div class="desc">Unit testing</div></div>
+</div>
+</section>
+
+<footer class="footer">
+<p>SmartCourier Delivery Management System — System Design Documentation</p>
+<p style="margin-top:.3rem;font-size:.7rem">Spring Boot · Angular · MySQL · RabbitMQ · Eureka · Zipkin · Docker</p>
+</footer>
+
+<script>
+// Sticky nav highlight
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.nav a');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => { if (window.scrollY >= s.offsetTop - 120) current = s.id; });
+  navLinks.forEach(a => { a.classList.toggle('active', a.getAttribute('href') === '#' + current); });
+});
+</script>
+</body>
+</html>

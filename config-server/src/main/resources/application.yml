@@ -1,0 +1,20 @@
+server:
+  port: 8889
+
+spring:
+  application:
+    name: config-server
+  cloud:
+    config:
+      server:
+        git:
+          # LOCAL URI (Commented out)
+          # uri: file:///D:/SprintEvaluation/config-repo
+          # GITHUB URI
+          uri: https://github.com/Namita-010304/SmartCourierConifgServer.git
+          default-label: main
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/

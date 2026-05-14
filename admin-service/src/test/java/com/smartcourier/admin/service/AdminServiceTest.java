@@ -141,12 +141,52 @@ class AdminServiceTest {
         delivery.put("trackingNumber", "SC123456");
 
         when(deliveryClient.getDeliveryById(1L)).thenReturn(delivery);
-        when(deliveryClient.updateStatus(1L, "RESOLVED")).thenReturn(delivery);
+        when(deliveryClient.updateStatus(eq(1L), eq("RESOLVED"), anyString(), anyString(), anyString())).thenReturn(delivery);
 
-        Object result = adminService.resolveDeliveryException(1L, "RESOLVED");
+        Object result = adminService.resolveDeliveryException(1L, "RESOLVED", "admin", "ADMIN");
 
         assertNotNull(result);
-        verify(deliveryClient).updateStatus(1L, "RESOLVED");
+        verify(deliveryClient).updateStatus(eq(1L), eq("RESOLVED"), anyString(), anyString(), anyString());
         verify(trackingClient).addTrackingEvent(eq(1L), eq("SC123456"), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void resolveDeliveryException_TrackingFailure_StillReturnsSuccess() {
+        Map<String, Object> delivery = new HashMap<>();
+        delivery.put("trackingNumber", "SC123456");
+
+        when(deliveryClient.getDeliveryById(1L)).thenReturn(delivery);
+        when(trackingClient.addTrackingEvent(anyLong(), anyString(), anyString(), anyString(), anyString()))
+                .thenThrow(new RuntimeException("Tracking service down"));
+
+        Object result = adminService.resolveDeliveryException(1L, "RESOLVED", "admin", "ADMIN");
+
+        assertNotNull(result);
+        // Should not throw exception, just log error
+        verify(deliveryClient).updateStatus(eq(1L), eq("RESOLVED"), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void generateReport_Performance() {
+        when(reportRepository.save(any(Report.class))).thenAnswer(i -> i.getArguments()[0]);
+        Report result = adminService.generateReport("PERFORMANCE", "Perf Report", "admin");
+        assertNotNull(result);
+        assertTrue(result.getData().contains("onTimeRate"));
+    }
+
+    @Test
+    void generateReport_HubUtilization() {
+        when(reportRepository.save(any(Report.class))).thenAnswer(i -> i.getArguments()[0]);
+        Report result = adminService.generateReport("HUB_UTILIZATION", "Hub Report", "admin");
+        assertNotNull(result);
+        assertTrue(result.getData().contains("totalHubs"));
+    }
+
+    @Test
+    void generateReport_Default() {
+        when(reportRepository.save(any(Report.class))).thenAnswer(i -> i.getArguments()[0]);
+        Report result = adminService.generateReport("OTHER", "Other Report", "admin");
+        assertNotNull(result);
+        assertTrue(result.getData().contains("General report"));
     }
 }

@@ -1,0 +1,69 @@
+<div class="auth-container">
+  <div class="glass-card auth-card">
+    <div class="auth-header">
+      <div class="logo-circle"><i class="bi bi-person-plus"></i></div>
+      <h2>Create Account</h2>
+      <p>Start your logistics journey today</p>
+    </div>
+
+    <form [formGroup]="signupForm" (ngSubmit)="onSubmit()" class="auth-form">
+      <div class="form-group">
+        <label>Username</label>
+        <div class="input-wrapper">
+          <i class="bi bi-at"></i>
+          <input type="text" formControlName="username" placeholder="johndoe123">
+        </div>
+        <div class="error-msg" *ngIf="signupForm.get('username')?.touched && signupForm.get('username')?.invalid">
+          <span *ngIf="signupForm.get('username')?.errors?.['required']">Username is required</span>
+          <span *ngIf="signupForm.get('username')?.errors?.['minlength']">Min 4 characters required</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Email Address</label>
+        <div class="input-wrapper">
+          <i class="bi bi-envelope"></i>
+          <input type="email" formControlName="email" placeholder="name@company.com">
+        </div>
+        <div class="error-msg" *ngIf="signupForm.get('email')?.touched && signupForm.get('email')?.invalid">
+          <span *ngIf="signupForm.get('email')?.errors?.['required']">Email is required</span>
+          <span *ngIf="signupForm.get('email')?.errors?.['email']">Invalid email format</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Password</label>
+        <div class="input-wrapper">
+          <i class="bi bi-lock"></i>
+          <input type="password" formControlName="password" placeholder="••••••••">
+        </div>
+        <div class="error-msg" *ngIf="signupForm.get('password')?.touched && signupForm.get('password')?.invalid">
+          <span *ngIf="signupForm.get('password')?.errors?.['required']">Password is required</span>
+          <span *ngIf="signupForm.get('password')?.errors?.['pattern']">
+            Must have 6+ chars, 1 upper, 1 lower, 1 digit & 1 special char
+          </span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Confirm Password</label>
+        <div class="input-wrapper">
+          <i class="bi bi-lock-fill"></i>
+          <input type="password" formControlName="confirmPassword" placeholder="••••••••">
+        </div>
+        <div class="error-msg" *ngIf="signupForm.get('confirmPassword')?.touched && (signupForm.get('confirmPassword')?.invalid || signupForm.hasError('passwordMismatch'))">
+          <span *ngIf="signupForm.get('confirmPassword')?.errors?.['required']">Confirmation is required</span>
+          <span *ngIf="signupForm.hasError('passwordMismatch')">Passwords do not match</span>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full" [disabled]="signupForm.invalid && signupForm.touched">
+        Get Started <i class="bi bi-arrow-right-short"></i>
+      </button>
+      
+      <p class="auth-switch">
+        Already have an account? <a routerLink="/login">Sign in</a>
+      </p>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,125 @@
+<div class="track-page">
+
+  <!-- Page Header -->
+  <div class="track-header">
+    <h2 class="track-title">Track Your Parcel</h2>
+    <p class="track-subtitle">Enter your tracking number to get real-time delivery updates</p>
+
+    <!-- Search Box -->
+    <div class="search-wrap">
+      <div class="search-box">
+        <i class="bi bi-geo-alt-fill search-icon"></i>
+        <input
+          type="text"
+          class="search-input"
+          [(ngModel)]="trackingNumber"
+          placeholder="e.g. SC-20250430-1234"
+          (keyup.enter)="onSearch()"
+        />
+        <button class="btn btn-primary search-btn" (click)="onSearch()" [disabled]="isLoading">
+          <i class="bi bi-search"></i>
+          {{ isLoading ? 'Searching...' : 'Track Now' }}
+        </button>
+      </div>
+
+      <!-- Hint -->
+      <div class="search-hint">
+        <i class="bi bi-lightbulb-fill"></i>
+        Your tracking number looks like <strong>SC-20250430-1234</strong> —
+        find it in <a routerLink="/customer/deliveries" class="hint-link">My Deliveries</a>
+        and click <i class="bi bi-clipboard"></i> to copy.
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="center-state" *ngIf="isLoading">
+    <i class="bi bi-arrow-repeat spin"></i>
+    <p>Searching for your parcel...</p>
+  </div>
+
+  <!-- Empty / Initial -->
+  <div class="center-state" *ngIf="!isSearched && !isLoading">
+    <i class="bi bi-truck empty-icon"></i>
+    <p class="empty-label">Enter a tracking number above to begin</p>
+    <a routerLink="/customer/deliveries" class="btn btn-outline btn-sm">
+      <i class="bi bi-list-ul"></i> View My Deliveries
+    </a>
+  </div>
+
+  <!-- Results -->
+  <div *ngIf="isSearched && !isLoading">
+
+    <!-- Status Banner -->
+    <div class="status-banner glass-card">
+      <div class="status-left">
+        <span class="status-label">Current Status</span>
+        <app-status-badge [status]="currentStatus"></app-status-badge>
+      </div>
+      <div class="status-right">
+        <span class="status-label">Tracking Number</span>
+        <span class="tracking-num">{{ trackingNumber }}</span>
+      </div>
+    </div>
+
+    <!-- Exception Alert -->
+    <div class="exception-alert" *ngIf="currentStatus === 'DELAYED' || currentStatus === 'FAILED'">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      <div>
+        <strong>{{ currentStatus === 'DELAYED' ? 'Shipment Delayed' : 'Delivery Failed' }}</strong>
+        <p>Our team is working to resolve this. Contact support for assistance.</p>
+      </div>
+    </div>
+
+    <!-- Two Column Layout -->
+    <div class="results-grid">
+
+      <!-- Timeline -->
+      <div class="glass-card">
+        <h3 class="card-heading">Tracking History</h3>
+        <app-delivery-timeline [events]="timelineEvents"></app-delivery-timeline>
+      </div>
+
+      <!-- Info + Help -->
+      <div class="side-col">
+
+        <div class="glass-card info-card" *ngIf="deliveryInfo">
+          <h3 class="card-heading">Shipment Info</h3>
+          <div class="info-list">
+            <div class="info-row">
+              <span><i class="bi bi-box-arrow-up-right"></i> Origin</span>
+              <strong>{{ deliveryInfo.senderAddress?.city || 'N/A' }}</strong>
+            </div>
+            <div class="info-row">
+              <span><i class="bi bi-box-arrow-in-down-right"></i> Destination</span>
+              <strong>{{ deliveryInfo.receiverAddress?.city || 'N/A' }}</strong>
+            </div>
+            <div class="info-row">
+              <span><i class="bi bi-lightning-charge"></i> Service</span>
+              <strong>{{ deliveryInfo.packageDetails?.serviceType || 'N/A' }}</strong>
+            </div>
+            <div class="info-row">
+              <span><i class="bi bi-box-seam"></i> Weight</span>
+              <strong>{{ deliveryInfo.packageDetails?.weight || 'N/A' }} kg</strong>
+            </div>
+            <div class="info-row highlight">
+              <span><i class="bi bi-tag"></i> Charge</span>
+              <strong class="text-primary">${{ deliveryInfo.charge || '0.00' }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-card help-card">
+          <i class="bi bi-headset help-icon"></i>
+          <h4>Need Help?</h4>
+          <p>If your parcel hasn't moved in 48 hours, contact our support team.</p>
+          <a routerLink="/customer/deliveries" class="btn btn-outline btn-sm btn-full">
+            <i class="bi bi-arrow-left"></i> Back to Deliveries
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
